@@ -9,6 +9,8 @@ import '../models.dart';
 import '../theme.dart';
 import '../widgets/code_block.dart';
 
+enum QuizExit { nextLesson }
+
 /// Generic quiz runner used for lessons, checkpoints and the daily review.
 ///
 /// The screen owns only presentation and scoring; rewards, pass thresholds and
@@ -21,6 +23,7 @@ class QuizScreen extends StatefulWidget {
     required this.questions,
     required this.onSubmit,
     this.timeLimit,
+    this.nextLessonTitle,
   });
 
   final String title;
@@ -29,6 +32,7 @@ class QuizScreen extends StatefulWidget {
   final Future<QuizResult> Function(int correct, int total, List<bool> results)
   onSubmit;
   final Duration? timeLimit;
+  final String? nextLessonTitle;
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -132,6 +136,10 @@ class _QuizScreenState extends State<QuizScreen> {
     await _finish();
   }
 
+  void _leave({required bool next}) {
+    Navigator.of(context).pop(next ? QuizExit.nextLesson : null);
+  }
+
   Future<void> _finish() async {
     if (_submitting) return;
     _timer?.cancel();
@@ -179,7 +187,13 @@ class _QuizScreenState extends State<QuizScreen> {
       Navigator.of(context).maybePop();
       return true;
     }
-    if (_result != null) return false;
+    if (_result != null) {
+      if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space) {
+        _leave(next: widget.nextLessonTitle != null);
+        return true;
+      }
+      return false;
+    }
 
     // Let the text field own Enter while it is focused (onSubmitted handles
     // submit); once it is disabled, Enter reaches this handler to advance.
@@ -378,11 +392,22 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
             ),
         ],
-        const SizedBox(height: 26),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(result),
-          child: const Text('Done'),
-        ),
+        const SizedBox(height: 22),
+        if (widget.nextLessonTitle != null) ...[
+          FilledButton(
+            onPressed: () => _leave(next: true),
+            child: Text('Next lesson: ${widget.nextLessonTitle}'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: () => _leave(next: false),
+            child: const Text('Back to lesson'),
+          ),
+        ] else
+          FilledButton(
+            onPressed: () => _leave(next: false),
+            child: const Text('Done'),
+          ),
         const SizedBox(height: 10),
         OutlinedButton(
           onPressed: () {
@@ -390,6 +415,14 @@ class _QuizScreenState extends State<QuizScreen> {
             _focusInput();
           },
           child: const Text('Try again'),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          widget.nextLessonTitle != null
+              ? 'Enter: next lesson · Esc: back'
+              : 'Enter: done · Esc: back',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: kMuted, fontSize: 11),
         ),
       ],
     );

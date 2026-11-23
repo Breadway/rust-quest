@@ -354,4 +354,32 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Done'), findsOneWidget);
   });
+
+  testWidgets('N opens the next lesson', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final c = Curriculum.fromJsonString(
+      '{"courses":[{"id":"c","title":"C","modules":[{"id":"m","title":"M","lessons":[{"id":"l1","title":"First lesson","body":"x","xp":1,"coins":1,"questions":[{"type":"trueFalse","prompt":"p","answer":true,"explanation":"e"}]},{"id":"l2","title":"Second lesson","body":"y","xp":1,"coins":1,"questions":[{"type":"trueFalse","prompt":"p","answer":true,"explanation":"e"}]}]}]}],"achievements":[]}',
+    );
+    final state = await AppState.load(c);
+    final first = c.courses.first.allLessons.first;
+    await state.submitLesson(first, 1, 1, [true]);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildTheme(),
+        home: LessonScreen(state: state, lesson: first),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 120));
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.keyN);
+    await tester.pump();
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.keyN);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Second lesson'), findsOneWidget);
+  });
 }

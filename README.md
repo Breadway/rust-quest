@@ -33,10 +33,16 @@ Current content: 13 courses, 49 modules, 153 lessons, 961 questions.
   export/import, and two-way sync to Hestia over WebDAV.
 - Adaptive layout: bottom navigation on phones, a navigation rail and a
   four-column grid on desktop.
-- Keyboard control in quizzes: `1-6` or `A-F` to answer, `Enter` to check and
-  advance, `Esc` to leave. Fill-in fields are focused automatically, Enter
-  submits the answer, and Enter again moves on. A question report button copies
-  the prompt, type and options for filing a content bug.
+- Keyboard flow for the whole path, no mouse needed to move through lessons:
+  - Home: `Enter` continue, `/` search, `R` daily review, `P` practice.
+  - Course: `Enter` continue, `N` next lesson, `P` previous, `Esc` back.
+  - Lesson: `Enter` quiz, `N` next lesson, `P` previous, `B` bookmark,
+    `Esc` back.
+  - Quiz: `1-6` or `A-F` answer, `Enter` check and next; on the result screen
+    `Enter` opens the next lesson. Fill-in fields autofocus, Enter submits,
+    and Enter again moves on.
+  - A question report button copies the prompt, type and options for filing a
+    content bug.
 
 ## Layout
 

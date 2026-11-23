@@ -27,12 +27,14 @@ class _LessonScreenState extends State<LessonScreen> {
   Lesson get lesson => widget.lesson;
 
   final TextEditingController _notes = TextEditingController();
+  final FocusNode _notesFocus = FocusNode();
   Timer? _notesTimer;
 
   @override
   void initState() {
     super.initState();
     _notes.text = state.notes[lesson.id] ?? '';
+    HardwareKeyboard.instance.addHandler(_handleHardwareKey);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) state.setLastLesson(lesson.id);
     });
@@ -41,10 +43,12 @@ class _LessonScreenState extends State<LessonScreen> {
   @override
   void dispose() {
     _notesTimer?.cancel();
+    HardwareKeyboard.instance.removeHandler(_handleHardwareKey);
     if (_notes.text != (state.notes[lesson.id] ?? '')) {
       state.setNote(lesson.id, _notes.text);
     }
     _notes.dispose();
+    _notesFocus.dispose();
     super.dispose();
   }
 
@@ -166,9 +170,22 @@ class _LessonScreenState extends State<LessonScreen> {
                     : 0.0;
                 return Padding(
                   padding: EdgeInsets.symmetric(horizontal: extra),
-                  child: FilledButton(
-                    onPressed: () => _startQuiz(context),
-                    child: Text(done ? 'Retake quiz' : 'Start quiz'),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (constraints.maxWidth >= 900)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 6),
+                          child: Text(
+                            'Enter quiz · N next lesson · P previous · B bookmark · Esc back',
+                            style: TextStyle(color: kMuted, fontSize: 11),
+                          ),
+                        ),
+                      FilledButton(
+                        onPressed: () => _startQuiz(context),
+                        child: Text(done ? 'Retake quiz' : 'Start quiz'),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -368,6 +385,7 @@ class _LessonScreenState extends State<LessonScreen> {
           const SizedBox(height: 8),
           TextField(
             controller: _notes,
+            focusNode: _notesFocus,
             onChanged: _onNotesChanged,
             minLines: 3,
             maxLines: 8,
@@ -387,19 +405,104 @@ class _LessonScreenState extends State<LessonScreen> {
     );
   }
 
+  Lesson? get _nextLesson {
+    final lessons = lesson.course?.allLessons ?? const <Lesson>[];
+    final index = lessons.indexOf(lesson);
+    if (index < 0 || index + 1 >= lessons.length) return null;
+    return lessons[index + 1];
+  }
+
+  Lesson? get _previousLesson {
+    final lessons = lesson.course?.allLessons ?? const <Lesson>[];
+    final index = lessons.indexOf(lesson);
+    if (index <= 0) return null;
+    return lessons[index - 1];
+  }
+
+  void _openLesson(Lesson target, {bool replace = false}) {
+    if (!state.isLessonUnlocked(target)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Finish the earlier lessons first')),
+      );
+      return;
+    }
+    final route = MaterialPageRoute<void>(
+      builder: (_) => LessonScreen(state: state, lesson: target),
+    );
+    if (replace) {
+      Navigator.of(context).pushReplacement(route);
+    } else {
+      Navigator.of(context).push(route);
+    }
+  }
+
+  void _goRelative(int delta) {
+    final target = delta > 0 ? _nextLesson : _previousLesson;
+    if (target == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            delta > 0 ? 'This is the last lesson' : 'This is the first lesson',
+          ),
+        ),
+      );
+      return;
+    }
+    _openLesson(target, replace: true);
+  }
+
+  bool _handleHardwareKey(KeyEvent event) {
+    if (event is! KeyDownEvent || !mounted) return false;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return false;
+    final key = event.logicalKey;
+    if (_notesFocus.hasFocus) {
+      if (key == LogicalKeyboardKey.escape) {
+        _notesFocus.unfocus();
+        return true;
+      }
+      return false;
+    }
+    if (key == LogicalKeyboardKey.escape) {
+      Navigator.of(context).maybePop();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space) {
+      _startQuiz(context);
+      return true;
+    }
+    if (key == LogicalKeyboardKey.keyN) {
+      _goRelative(1);
+      return true;
+    }
+    if (key == LogicalKeyboardKey.keyP) {
+      _goRelative(-1);
+      return true;
+    }
+    if (key == LogicalKeyboardKey.keyB) {
+      state.toggleBookmark(lesson.id);
+      return true;
+    }
+    return false;
+  }
+
   Future<void> _startQuiz(BuildContext context) async {
     if (lesson.questions.isEmpty) return;
-    await Navigator.of(context).push(
+    final next = _nextLesson;
+    final action = await Navigator.of(context).push<QuizExit>(
       MaterialPageRoute(
         builder: (_) => QuizScreen(
           title: 'Quiz',
           subtitle: lesson.title,
           questions: lesson.questions,
+          nextLessonTitle: next?.title,
           onSubmit: (correct, total, results) =>
               state.submitLesson(lesson, correct, total, results),
         ),
       ),
     );
+    if (!mounted || action != QuizExit.nextLesson || next == null) return;
+    _openLesson(next, replace: true);
   }
 
   void _showUnlocked(

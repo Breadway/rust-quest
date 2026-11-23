@@ -46,6 +46,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   controller: _controller,
                   autofocus: true,
                   onChanged: _search,
+                  onSubmitted: (_) {
+                    if (_hits.isNotEmpty) _openHit(_hits.first);
+                  },
                   decoration: InputDecoration(
                     hintText: 'Search titles, lessons and questions',
                     prefixIcon: const Icon(Icons.search),
@@ -131,17 +134,21 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  void _openHit(SearchHit hit) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LessonScreen(state: widget.state, lesson: hit.lesson),
+      ),
+    );
+  }
+
   Widget _hitTile(SearchHit hit) {
     final lesson = hit.lesson;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => LessonScreen(state: widget.state, lesson: lesson),
-          ),
-        ),
+        onTap: () => _openHit(hit),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.all(14),

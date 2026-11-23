@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_state.dart';
 import '../models.dart';
@@ -8,10 +9,91 @@ import 'lesson_screen.dart';
 import 'quiz_screen.dart';
 import 'search_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.state});
 
   final AppState state;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  AppState get state => widget.state;
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_handleHardwareKey);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleHardwareKey);
+    super.dispose();
+  }
+
+  void _openSearch() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => SearchScreen(state: state)));
+  }
+
+  void _openCourse() {
+    final last = state.lastLessonId;
+    final lesson = last == null ? null : state.curriculum.lessonById[last];
+    if (lesson != null) {
+      var target = lesson;
+      if (state.isLessonCompleted(lesson.id)) {
+        final lessons = lesson.course?.allLessons ?? const <Lesson>[];
+        final index = lessons.indexOf(lesson);
+        if (index >= 0 &&
+            index + 1 < lessons.length &&
+            state.isLessonUnlocked(lessons[index + 1])) {
+          target = lessons[index + 1];
+        }
+      }
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => LessonScreen(state: state, lesson: target),
+        ),
+      );
+      return;
+    }
+    final course = state.curriculum.courses.firstWhere(
+      state.isCourseUnlocked,
+      orElse: () => state.curriculum.courses.first,
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CourseScreen(state: state, course: course),
+      ),
+    );
+  }
+
+  bool _handleHardwareKey(KeyEvent event) {
+    if (event is! KeyDownEvent || !mounted) return false;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return false;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space) {
+      _openCourse();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.slash) {
+      _openSearch();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.keyR && state.reviewAvailable) {
+      _openReview(context);
+      return true;
+    }
+    if (key == LogicalKeyboardKey.keyP) {
+      _openPractice(context);
+      return true;
+    }
+    return false;
+  }
 
   @override
   Widget build(BuildContext context) {

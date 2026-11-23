@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app_state.dart';
 import '../models.dart';
@@ -6,11 +7,31 @@ import '../theme.dart';
 import 'lesson_screen.dart';
 import 'quiz_screen.dart';
 
-class CourseScreen extends StatelessWidget {
+class CourseScreen extends StatefulWidget {
   const CourseScreen({super.key, required this.state, required this.course});
 
   final AppState state;
   final Course course;
+
+  @override
+  State<CourseScreen> createState() => _CourseScreenState();
+}
+
+class _CourseScreenState extends State<CourseScreen> {
+  AppState get state => widget.state;
+  Course get course => widget.course;
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_handleHardwareKey);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleHardwareKey);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +58,18 @@ class CourseScreen extends StatelessWidget {
               ],
             ),
           ),
+          bottomNavigationBar: MediaQuery.sizeOf(context).width < 900
+              ? null
+              : const SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 10),
+                    child: Text(
+                      'Enter continue · N next lesson · P previous · Esc back',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: kMuted, fontSize: 11),
+                    ),
+                  ),
+                ),
           body: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 900),
@@ -281,6 +314,97 @@ class CourseScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Lesson? _currentLesson() {
+    final last = state.lastLessonId;
+    if (last == null) return null;
+    for (final lesson in course.allLessons) {
+      if (lesson.id == last) return lesson;
+    }
+    return null;
+  }
+
+  Lesson _continueLesson() {
+    final current = _currentLesson();
+    if (current != null && state.isLessonUnlocked(current)) {
+      if (!state.isLessonCompleted(current.id)) return current;
+      final lessons = course.allLessons;
+      final index = lessons.indexOf(current);
+      if (index >= 0 && index + 1 < lessons.length) {
+        final next = lessons[index + 1];
+        if (state.isLessonUnlocked(next)) return next;
+      }
+      return current;
+    }
+    for (final lesson in course.allLessons) {
+      if (state.isLessonUnlocked(lesson) &&
+          !state.isLessonCompleted(lesson.id)) {
+        return lesson;
+      }
+    }
+    return course.allLessons.firstWhere(
+      state.isLessonUnlocked,
+      orElse: () => course.allLessons.first,
+    );
+  }
+
+  void _openLesson(Lesson lesson) {
+    if (!state.isLessonUnlocked(lesson)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Finish the earlier lessons first')),
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LessonScreen(state: state, lesson: lesson),
+      ),
+    );
+  }
+
+  void _goRelative(int delta) {
+    final lessons = course.allLessons;
+    final current = _currentLesson();
+    var index = current == null
+        ? (delta > 0 ? -1 : lessons.length)
+        : lessons.indexOf(current);
+    index += delta;
+    if (index < 0 || index >= lessons.length) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            delta > 0 ? 'No next lesson in this course' : 'No previous lesson',
+          ),
+        ),
+      );
+      return;
+    }
+    _openLesson(lessons[index]);
+  }
+
+  bool _handleHardwareKey(KeyEvent event) {
+    if (event is! KeyDownEvent || !mounted) return false;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return false;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.escape) {
+      Navigator.of(context).maybePop();
+      return true;
+    }
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space) {
+      _openLesson(_continueLesson());
+      return true;
+    }
+    if (key == LogicalKeyboardKey.keyN) {
+      _goRelative(1);
+      return true;
+    }
+    if (key == LogicalKeyboardKey.keyP) {
+      _goRelative(-1);
+      return true;
+    }
+    return false;
   }
 
   Future<void> _openCheckpoint(BuildContext context, Module module) async {
