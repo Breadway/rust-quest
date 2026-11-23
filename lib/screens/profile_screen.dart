@@ -3,14 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app_state.dart';
+import '../reminder_service.dart';
 import '../sync_service.dart';
 import '../theme.dart';
+import 'lesson_screen.dart';
+import 'quiz_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key, required this.state, required this.sync});
+  const ProfileScreen({
+    super.key,
+    required this.state,
+    required this.sync,
+    required this.reminders,
+  });
 
   final AppState state;
   final SyncService sync;
+  final ReminderService reminders;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +123,16 @@ class ProfileScreen extends StatelessWidget {
                       _stat('Checkpoints', '${state.passedCheckpoints.length}'),
                     ],
                   ),
+                  const SizedBox(height: 18),
+                  _MasteryCard(state: state),
+                  if (state.weakQuestions(limit: 1).isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _MistakesCard(state: state),
+                  ],
+                  if (state.bookmarks.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _BookmarksCard(state: state),
+                  ],
                   const SizedBox(height: 24),
                   Row(
                     children: [
@@ -134,6 +153,9 @@ class ProfileScreen extends StatelessWidget {
                   const SizedBox(height: 10),
                   for (final a in achievements)
                     _achievementTile(a.id, a.icon, a.title, a.description),
+                  const SizedBox(height: 18),
+                  const SizedBox(height: 18),
+                  _StudySettings(state: state, reminders: reminders),
                   const SizedBox(height: 18),
                   const Text(
                     'About',
@@ -571,6 +593,393 @@ class _BackupCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MasteryCard extends StatelessWidget {
+  const _MasteryCard({required this.state});
+
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final courses =
+        [
+          for (final c in state.curriculum.courses)
+            if (state.attemptsForCourse(c) > 0) c,
+        ]..sort(
+          (a, b) =>
+              state.attemptsForCourse(b).compareTo(state.attemptsForCourse(a)),
+        );
+    final days = state.lastDays(7);
+    final maxDay = days.fold<int>(
+      1,
+      (m, d) => d.questions > m ? d.questions : m,
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.insights, size: 18, color: kPrimary),
+              const SizedBox(width: 8),
+              const Text(
+                'Mastery',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              Text(
+                '${(state.overallAccuracy * 100).round()}% correct',
+                style: const TextStyle(
+                  color: kGold,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${state.questionsAnswered} answers · '
+            '${state.weakQuestions(limit: 999).length} questions still shaky',
+            style: const TextStyle(color: kMuted, fontSize: 11.5),
+          ),
+          if (courses.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            for (final course in courses.take(6)) ...[
+              Row(
+                children: [
+                  Text(course.icon),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      course.title,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 110,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: state.accuracyForCourse(course),
+                        minHeight: 5,
+                        backgroundColor: kSurfaceAlt,
+                        color: kPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${(state.accuracyForCourse(course) * 100).round()}%',
+                    style: const TextStyle(color: kMuted, fontSize: 10.5),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+            ],
+          ],
+          const SizedBox(height: 8),
+          const Text(
+            'Last 7 days',
+            style: TextStyle(color: kMuted, fontSize: 10.5),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            height: 42,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (final day in days)
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          height: 6 + 30 * (day.questions / maxDay),
+                          decoration: BoxDecoration(
+                            color: day.questions == 0
+                                ? kSurfaceAlt
+                                : kPrimary.withValues(alpha: .8),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MistakesCard extends StatelessWidget {
+  const _MistakesCard({required this.state});
+
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final weak = state.weakQuestions(limit: 10);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kSurfaceAlt),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('🧠', style: TextStyle(fontSize: 17)),
+              const SizedBox(width: 8),
+              const Text(
+                'Mistake notebook',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              Text(
+                '${weak.length}',
+                style: const TextStyle(color: kMuted, fontSize: 12),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final q in weak.take(3))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${state.questionStats[q.key]?.wrong ?? 0}×',
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      q.prompt,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 6),
+          FilledButton.tonalIcon(
+            onPressed: () {
+              final questions = state.practiceQuestions(
+                count: weak.length.clamp(5, 20),
+                weakOnly: true,
+              );
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => QuizScreen(
+                    title: 'Mistake practice',
+                    subtitle: 'weak spots',
+                    questions: questions,
+                    timeLimit: const Duration(minutes: 5),
+                    onSubmit: (correct, total, results) => state.submitPractice(
+                      questions,
+                      correct,
+                      total,
+                      results,
+                    ),
+                  ),
+                ),
+              );
+            },
+            icon: const Icon(Icons.replay, size: 16),
+            label: Text('Practice ${weak.length} mistakes'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BookmarksCard extends StatelessWidget {
+  const _BookmarksCard({required this.state});
+
+  final AppState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final lessons = [
+      for (final id in state.bookmarks)
+        if (state.curriculum.lessonById[id] != null)
+          state.curriculum.lessonById[id]!,
+    ];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kSurfaceAlt),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.bookmark, size: 17, color: kGold),
+              SizedBox(width: 8),
+              Text(
+                'Bookmarks',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          for (final lesson in lessons.take(6))
+            InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => LessonScreen(state: state, lesson: lesson),
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        lesson.title,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, size: 16, color: kMuted),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StudySettings extends StatefulWidget {
+  const _StudySettings({required this.state, required this.reminders});
+
+  final AppState state;
+  final ReminderService reminders;
+
+  @override
+  State<_StudySettings> createState() => _StudySettingsState();
+}
+
+class _StudySettingsState extends State<_StudySettings> {
+  late double _goal = widget.state.dailyGoal.toDouble();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.tune, size: 18, color: kPrimary),
+              SizedBox(width: 8),
+              Text(
+                'Study settings',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Daily goal', style: TextStyle(fontSize: 13)),
+              const Spacer(),
+              Text(
+                '${_goal.round()} questions',
+                style: const TextStyle(color: kMuted, fontSize: 12),
+              ),
+            ],
+          ),
+          Slider(
+            value: _goal,
+            min: 5,
+            max: 50,
+            divisions: 9,
+            label: '${_goal.round()}',
+            onChanged: (v) => setState(() => _goal = v),
+            onChangeEnd: (v) => widget.state.setDailyGoal(v.round()),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Daily reminder'),
+            subtitle: Text(
+              'At ${widget.state.reminderTime} if the goal is not met',
+              style: const TextStyle(color: kMuted, fontSize: 11),
+            ),
+            value: widget.state.remindersEnabled,
+            onChanged: (v) async {
+              await widget.state.setReminder(
+                enabled: v,
+                time: widget.state.reminderTime,
+              );
+              await widget.reminders.reschedule();
+            },
+          ),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.schedule, size: 18, color: kMuted),
+            title: const Text('Reminder time'),
+            trailing: Text(
+              widget.state.reminderTime,
+              style: const TextStyle(color: kGold, fontWeight: FontWeight.w700),
+            ),
+            onTap: () async {
+              final parts = widget.state.reminderTime.split(':');
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: TimeOfDay(
+                  hour: int.tryParse(parts.first) ?? 19,
+                  minute: int.tryParse(parts.last) ?? 0,
+                ),
+              );
+              if (picked == null) return;
+              final text =
+                  '${picked.hour.toString().padLeft(2, '0')}:'
+                  '${picked.minute.toString().padLeft(2, '0')}';
+              await widget.state.setReminder(
+                enabled: widget.state.remindersEnabled,
+                time: text,
+              );
+              await widget.reminders.reschedule();
+            },
           ),
         ],
       ),

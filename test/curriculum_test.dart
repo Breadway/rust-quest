@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_highlight/flutter_highlight.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,14 +86,18 @@ void main() {
     expect(state.isCourseUnlocked(advanced), isTrue);
 
     for (final lesson in basics.allLessons) {
-      await state.submitLesson(
-        lesson,
-        lesson.questions.length,
-        lesson.questions.length,
-      );
+      final n = lesson.questions.length;
+      await state.submitLesson(lesson, n, n, List.filled(n, true));
     }
     for (final module in basics.modules) {
-      await state.submitCheckpoint(module, 10, 10);
+      final n = module.questions.length;
+      await state.submitCheckpoint(
+        module,
+        module.questions,
+        n,
+        n,
+        List.filled(n, true),
+      );
     }
 
     expect(state.isCourseComplete(basics), isTrue);
@@ -108,17 +113,19 @@ void main() {
     final second = lessons[1];
 
     expect(state.isLessonUnlocked(second), isFalse);
-    final result = await state.submitLesson(
-      first,
-      first.questions.length,
-      first.questions.length,
-    );
+    final n = first.questions.length;
+    final result = await state.submitLesson(first, n, n, List.filled(n, true));
     expect(result.firstCompletion, isTrue);
     expect(state.xp, first.xp);
     expect(state.coins, first.coins);
     expect(state.isLessonUnlocked(second), isTrue);
 
-    final retake = await state.submitLesson(first, 0, first.questions.length);
+    final retake = await state.submitLesson(
+      first,
+      0,
+      first.questions.length,
+      List.filled(first.questions.length, false),
+    );
     expect(retake.firstCompletion, isFalse);
     expect(state.xp, first.xp, reason: 'retakes must not award XP again');
   });
@@ -127,37 +134,12 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     final state = await AppState.load(sharedCurriculum);
     final lesson = sharedCurriculum.courses.first.allLessons.first;
-    await state.submitLesson(
-      lesson,
-      lesson.questions.length,
-      lesson.questions.length,
-    );
+    final n = lesson.questions.length;
+    await state.submitLesson(lesson, n, n, List.filled(n, true));
 
     final reloaded = await AppState.load(sharedCurriculum);
     expect(reloaded.completedLessons, contains(lesson.id));
     expect(reloaded.xp, lesson.xp);
-  });
-
-  testWidgets('lesson screen renders markdown and the quiz button', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({});
-    final state = await AppState.load(sharedCurriculum);
-    final lesson = sharedCurriculum.courses.first.allLessons.first;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: buildTheme(),
-        home: LessonScreen(state: state, lesson: lesson),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
-    expect(tester.takeException(), isNull);
-    expect(find.text(lesson.title), findsOneWidget);
-    expect(find.text('Start quiz'), findsOneWidget);
-    expect(find.byType(HighlightView), findsWidgets);
   });
 
   testWidgets('code ordering puts every line on its own row', (tester) async {
@@ -175,7 +157,7 @@ void main() {
           title: 'Quiz',
           subtitle: 'test',
           questions: [question],
-          onSubmit: (correct, total) async => const QuizResult(
+          onSubmit: (correct, total, results) async => const QuizResult(
             correct: 0,
             total: 1,
             passed: false,
@@ -213,7 +195,7 @@ void main() {
           title: 'Quiz',
           subtitle: 'test',
           questions: [question],
-          onSubmit: (correct, total) async => const QuizResult(
+          onSubmit: (correct, total, results) async => const QuizResult(
             correct: 0,
             total: 1,
             passed: false,
@@ -228,5 +210,148 @@ void main() {
     await tester.pump();
 
     expect(find.text('print!\nprint!'), findsOneWidget);
+  });
+
+  test('question keys are unique and book references load', () async {
+    final curriculum = await loadCurriculum();
+    final keys = <String>{};
+    for (final lesson in curriculum.allLessons) {
+      for (final q in lesson.questions) {
+        expect(q.key, isNotEmpty);
+        expect(keys.add(q.key), isTrue, reason: 'duplicate ${q.key}');
+      }
+    }
+    final ref = curriculum.bookRefFor('basics_hello');
+    expect(ref, isNotNull);
+    expect(ref!.title, isNotEmpty);
+    expect(ref.url, startsWith('http'));
+  });
+
+  test('answers feed spaced repetition and daily stats', () async {
+    SharedPreferences.setMockInitialValues({});
+    final curriculum = await loadCurriculum();
+    final state = await AppState.load(curriculum);
+    final lesson = curriculum.courses.first.allLessons.first;
+    final n = lesson.questions.length;
+
+    final results = List<bool>.filled(n, true)..[0] = false;
+    await state.submitLesson(lesson, n - 1, n, results);
+
+    final firstKey = lesson.questions.first.key;
+    expect(state.questionStats[firstKey]!.wrong, 1);
+    expect(
+      state.questionStats[firstKey]!.due!.isAfter(DateTime.now().toUtc()),
+      isFalse,
+    );
+    expect(state.todayQuestions, n);
+    expect(state.dueQuestions(limit: 10), isNotEmpty);
+
+    // Answer it correctly on the next attempt: the stage advances.
+    await state.submitLesson(lesson, n, n, List.filled(n, true));
+    expect(state.questionStats[firstKey]!.correct, greaterThan(0));
+    expect(
+      state.questionStats[firstKey]!.due!.isAfter(DateTime.now().toUtc()),
+      isTrue,
+    );
+    expect(state.weakQuestions(limit: 10), isNotEmpty); // still has one wrong
+  });
+
+  test('notes, bookmarks and resume persist', () async {
+    SharedPreferences.setMockInitialValues({});
+    final curriculum = await loadCurriculum();
+    final state = await AppState.load(curriculum);
+    final lesson = curriculum.courses.first.allLessons.first;
+
+    await state.setNote(lesson.id, 'remember the semicolon');
+    await state.toggleBookmark(lesson.id);
+    await state.setLastLesson(lesson.id);
+
+    final reloaded = await AppState.load(curriculum);
+    expect(reloaded.notes[lesson.id], 'remember the semicolon');
+    expect(reloaded.bookmarks, contains(lesson.id));
+    expect(reloaded.lastLessonId, lesson.id);
+  });
+
+  test('search finds titles and bodies', () async {
+    final curriculum = await loadCurriculum();
+    expect(curriculum.search('ownership'), isNotEmpty);
+    expect(curriculum.search('async'), isNotEmpty);
+    expect(curriculum.search('zzzz-not-a-topic'), isEmpty);
+  });
+
+  testWidgets('lesson screen renders markdown and the quiz button', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final state = await AppState.load(sharedCurriculum);
+    final lesson = sharedCurriculum.courses.first.allLessons.first;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildTheme(),
+        home: LessonScreen(state: state, lesson: lesson),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text(lesson.title), findsOneWidget);
+    expect(find.text('Start quiz'), findsOneWidget);
+    expect(find.byType(HighlightView), findsWidgets);
+  });
+
+  testWidgets('fill blank is focused and Enter submits then advances', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final c = Curriculum.fromJsonString(
+      '{"courses":[{"id":"c","title":"C","modules":[{"id":"m","title":"M","lessons":[{"id":"l","title":"L","body":"x","xp":1,"coins":1,"questions":[{"type":"fillBlank","prompt":"fn ____()","answers":["main"],"explanation":"e"}]}]}]}],"achievements":[]}',
+    );
+    final state = await AppState.load(c);
+    final question = c.courses.first.allLessons.first.questions.first;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildTheme(),
+        home: QuizScreen(
+          title: 'Quiz',
+          subtitle: 'test',
+          questions: [question],
+          onSubmit: (correct, total, results) async => const QuizResult(
+            correct: 1,
+            total: 1,
+            passed: true,
+            xpAwarded: 0,
+            coinsAwarded: 0,
+            firstCompletion: false,
+            unlocked: [],
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final field = find.byType(TextField);
+    expect(field, findsOneWidget);
+    expect(
+      tester.widget<TextField>(field).focusNode!.hasFocus,
+      isTrue,
+      reason: 'the field should be ready for typing without a click',
+    );
+
+    await tester.enterText(field, 'main');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Correct'), findsOneWidget);
+
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.enter);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Done'), findsOneWidget);
   });
 }

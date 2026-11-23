@@ -297,8 +297,13 @@ class CourseScreen extends StatelessWidget {
           title: 'Checkpoint',
           subtitle: '${module.title} · 80% to pass',
           questions: questions,
-          onSubmit: (correct, total) =>
-              state.submitCheckpoint(module, correct, total),
+          onSubmit: (correct, total, results) => state.submitCheckpoint(
+            module,
+            questions,
+            correct,
+            total,
+            results,
+          ),
         ),
       ),
     );

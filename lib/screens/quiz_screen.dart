@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 import '../app_state.dart';
@@ -17,12 +20,15 @@ class QuizScreen extends StatefulWidget {
     required this.subtitle,
     required this.questions,
     required this.onSubmit,
+    this.timeLimit,
   });
 
   final String title;
   final String subtitle;
   final List<Question> questions;
-  final Future<QuizResult> Function(int correct, int total) onSubmit;
+  final Future<QuizResult> Function(int correct, int total, List<bool> results)
+  onSubmit;
+  final Duration? timeLimit;
 
   @override
   State<QuizScreen> createState() => _QuizScreenState();
@@ -30,6 +36,10 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   final TextEditingController _text = TextEditingController();
+  final FocusNode _textFocus = FocusNode();
+  final List<bool> _results = [];
+  Timer? _timer;
+  Duration? _remaining;
   int _index = 0;
   int _correct = 0;
   int? _selected;
@@ -47,11 +57,29 @@ class _QuizScreenState extends State<QuizScreen> {
   void initState() {
     super.initState();
     _resetQuestion();
+    HardwareKeyboard.instance.addHandler(_handleHardwareKey);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _focusInput());
+    if (widget.timeLimit != null) {
+      _remaining = widget.timeLimit;
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted || _result != null) return;
+        final left = _remaining! - const Duration(seconds: 1);
+        if (left <= Duration.zero) {
+          setState(() => _remaining = Duration.zero);
+          _finish();
+        } else {
+          setState(() => _remaining = left);
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
+    HardwareKeyboard.instance.removeHandler(_handleHardwareKey);
     _text.dispose();
+    _textFocus.dispose();
     super.dispose();
   }
 
@@ -98,10 +126,21 @@ class _QuizScreenState extends State<QuizScreen> {
         _index += 1;
         _resetQuestion();
       });
+      _focusInput();
       return;
     }
+    await _finish();
+  }
+
+  Future<void> _finish() async {
+    if (_submitting) return;
+    _timer?.cancel();
     setState(() => _submitting = true);
-    final result = await widget.onSubmit(_correct, widget.questions.length);
+    final result = await widget.onSubmit(
+      _correct,
+      widget.questions.length,
+      List.of(_results),
+    );
     if (!mounted) return;
     setState(() {
       _result = result;
@@ -110,22 +149,125 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   void _check() {
-    if (!_hasAnswer) return;
+    if (!_hasAnswer || _checked) return;
     final ok = _evaluate();
     setState(() {
       _checked = true;
       _lastCorrect = ok;
+      _results.add(ok);
       if (ok) _correct += 1;
     });
+    _focusInput();
+  }
+
+  /// Fill-in questions should accept typing immediately, without a click.
+  void _focusInput() {
+    if (_checked || _q.type != 'fillBlank') return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_checked && _q.type == 'fillBlank') {
+        _textFocus.requestFocus();
+      }
+    });
+  }
+
+  bool _handleHardwareKey(KeyEvent event) {
+    if (event is! KeyDownEvent || !mounted) return false;
+    final route = ModalRoute.of(context);
+    if (route != null && !route.isCurrent) return false;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.escape) {
+      Navigator.of(context).maybePop();
+      return true;
+    }
+    if (_result != null) return false;
+
+    // Let the text field own Enter while it is focused (onSubmitted handles
+    // submit); once it is disabled, Enter reaches this handler to advance.
+    if (_textFocus.hasFocus) return false;
+
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space) {
+      if (_checked) {
+        _next();
+      } else if (_hasAnswer) {
+        _check();
+      }
+      return true;
+    }
+
+    final option = _optionForKey(key);
+    if (option != null && !_checked) {
+      if (_q.type == 'trueFalse') {
+        if (option < 2) {
+          setState(() => _boolSelected = option == 0);
+          return true;
+        }
+      } else if (option < _q.options.length) {
+        setState(() => _selected = option);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  int? _optionForKey(LogicalKeyboardKey key) {
+    const digits = [
+      LogicalKeyboardKey.digit1,
+      LogicalKeyboardKey.digit2,
+      LogicalKeyboardKey.digit3,
+      LogicalKeyboardKey.digit4,
+      LogicalKeyboardKey.digit5,
+      LogicalKeyboardKey.digit6,
+    ];
+    const numpad = [
+      LogicalKeyboardKey.numpad1,
+      LogicalKeyboardKey.numpad2,
+      LogicalKeyboardKey.numpad3,
+      LogicalKeyboardKey.numpad4,
+      LogicalKeyboardKey.numpad5,
+      LogicalKeyboardKey.numpad6,
+    ];
+    final digit = digits.indexOf(key);
+    if (digit >= 0) return digit;
+    final pad = numpad.indexOf(key);
+    if (pad >= 0) return pad;
+    const letters = [
+      LogicalKeyboardKey.keyA,
+      LogicalKeyboardKey.keyB,
+      LogicalKeyboardKey.keyC,
+      LogicalKeyboardKey.keyD,
+      LogicalKeyboardKey.keyE,
+      LogicalKeyboardKey.keyF,
+    ];
+    final letter = letters.indexOf(key);
+    if (letter >= 0) return letter;
+    if (key == LogicalKeyboardKey.keyT) return 0;
+    if (key == LogicalKeyboardKey.keyF) return 1;
+    return null;
   }
 
   void _restart() {
     setState(() {
       _index = 0;
       _correct = 0;
+      _results.clear();
       _result = null;
+      _remaining = widget.timeLimit;
       _resetQuestion();
     });
+    _focusInput();
+    if (widget.timeLimit != null) {
+      _timer?.cancel();
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted || _result != null) return;
+        final left = _remaining! - const Duration(seconds: 1);
+        if (left <= Duration.zero) {
+          setState(() => _remaining = Duration.zero);
+          _finish();
+        } else {
+          setState(() => _remaining = left);
+        }
+      });
+    }
   }
 
   @override
@@ -163,21 +305,24 @@ class _QuizScreenState extends State<QuizScreen> {
               ),
             ),
             child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${result.percent}%',
-                    style: const TextStyle(
-                      fontSize: 38,
-                      fontWeight: FontWeight.w800,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${result.percent}%',
+                      style: const TextStyle(
+                        fontSize: 38,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                  Text(
-                    '${result.correct}/${result.total} correct',
-                    style: const TextStyle(color: kMuted, fontSize: 13),
-                  ),
-                ],
+                    Text(
+                      '${result.correct}/${result.total} correct',
+                      style: const TextStyle(color: kMuted, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -239,7 +384,13 @@ class _QuizScreenState extends State<QuizScreen> {
           child: const Text('Done'),
         ),
         const SizedBox(height: 10),
-        OutlinedButton(onPressed: _restart, child: const Text('Try again')),
+        OutlinedButton(
+          onPressed: () {
+            _restart();
+            _focusInput();
+          },
+          child: const Text('Try again'),
+        ),
       ],
     );
   }
@@ -264,8 +415,17 @@ class _QuizScreenState extends State<QuizScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    widget.subtitle,
-                    style: const TextStyle(color: kMuted, fontSize: 12),
+                    _remaining == null
+                        ? widget.subtitle
+                        : '${_format(_remaining!)} left',
+                    style: TextStyle(
+                      color:
+                          _remaining != null &&
+                              _remaining! < const Duration(seconds: 30)
+                          ? Colors.redAccent
+                          : kMuted,
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
@@ -306,6 +466,14 @@ class _QuizScreenState extends State<QuizScreen> {
             ],
           ),
         ),
+        if (MediaQuery.sizeOf(context).width >= 900 && !_checked)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 6),
+            child: Text(
+              'Keys: 1-6 / A-F answer · Enter check and next',
+              style: TextStyle(color: kMuted, fontSize: 11),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
           child: FilledButton(
@@ -377,7 +545,17 @@ class _QuizScreenState extends State<QuizScreen> {
         return [
           TextField(
             controller: _text,
+            focusNode: _textFocus,
             enabled: !_checked,
+            autofocus: true,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) {
+              if (_checked) {
+                _next();
+              } else {
+                _check();
+              }
+            },
             onChanged: (_) => setState(() {}),
             style: const TextStyle(fontFamily: 'monospace', fontSize: 17),
             decoration: InputDecoration(
@@ -514,6 +692,7 @@ class _QuizScreenState extends State<QuizScreen> {
   }) {
     return InkWell(
       onTap: onTap,
+      canRequestFocus: false,
       borderRadius: BorderRadius.circular(10),
       child: Container(
         width: double.infinity,
@@ -577,6 +756,7 @@ class _QuizScreenState extends State<QuizScreen> {
     }
     return InkWell(
       onTap: onTap,
+      canRequestFocus: false,
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: double.infinity,
@@ -657,6 +837,12 @@ class _QuizScreenState extends State<QuizScreen> {
         return 'Answer: ${i >= 0 && i < q.options.length ? q.options[i] : '?'}';
     }
   }
+}
+
+String _format(Duration d) {
+  final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+  return '$m:$s';
 }
 
 class _RewardChip extends StatelessWidget {

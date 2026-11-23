@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -10,11 +12,48 @@ import '../widgets/code_block.dart';
 import '../widgets/highlighted_code.dart';
 import 'quiz_screen.dart';
 
-class LessonScreen extends StatelessWidget {
+class LessonScreen extends StatefulWidget {
   const LessonScreen({super.key, required this.state, required this.lesson});
 
   final AppState state;
   final Lesson lesson;
+
+  @override
+  State<LessonScreen> createState() => _LessonScreenState();
+}
+
+class _LessonScreenState extends State<LessonScreen> {
+  AppState get state => widget.state;
+  Lesson get lesson => widget.lesson;
+
+  final TextEditingController _notes = TextEditingController();
+  Timer? _notesTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _notes.text = state.notes[lesson.id] ?? '';
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) state.setLastLesson(lesson.id);
+    });
+  }
+
+  @override
+  void dispose() {
+    _notesTimer?.cancel();
+    if (_notes.text != (state.notes[lesson.id] ?? '')) {
+      state.setNote(lesson.id, _notes.text);
+    }
+    _notes.dispose();
+    super.dispose();
+  }
+
+  void _onNotesChanged(String value) {
+    _notesTimer?.cancel();
+    _notesTimer = Timer(const Duration(milliseconds: 700), () {
+      state.setNote(lesson.id, value);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +63,22 @@ class LessonScreen extends StatelessWidget {
         final done = state.isLessonCompleted(lesson.id);
         final best = state.bestScore(lesson.id);
         return Scaffold(
-          appBar: AppBar(title: Text(lesson.module?.title ?? 'Lesson')),
+          appBar: AppBar(
+            title: Text(lesson.module?.title ?? 'Lesson'),
+            actions: [
+              IconButton(
+                tooltip: state.bookmarks.contains(lesson.id)
+                    ? 'Remove bookmark'
+                    : 'Bookmark this lesson',
+                icon: Icon(
+                  state.bookmarks.contains(lesson.id)
+                      ? Icons.bookmark
+                      : Icons.bookmark_border,
+                ),
+                onPressed: () => state.toggleBookmark(lesson.id),
+              ),
+            ],
+          ),
           body: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 820),
@@ -232,6 +286,107 @@ class LessonScreen extends StatelessWidget {
     }
   }
 
+  Widget _bookCard(LessonBook book) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kGold.withValues(alpha: .3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('📚', style: TextStyle(fontSize: 17)),
+              const SizedBox(width: 8),
+              const Text(
+                'Further reading',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              IconButton(
+                tooltip: 'Open the reference',
+                iconSize: 18,
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _openBook(context, book),
+                icon: const Icon(Icons.open_in_new, color: kMuted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(book.title, style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 2),
+          Text(
+            book.chapter,
+            style: const TextStyle(color: kMuted, fontSize: 12.5),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openBook(BuildContext context, LessonBook book) async {
+    final uri = Uri.tryParse(book.url);
+    if (uri == null ||
+        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the link')),
+        );
+      }
+    }
+  }
+
+  Widget _notesCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kSurfaceAlt),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.edit_note, size: 18, color: kPrimary),
+              const SizedBox(width: 8),
+              const Text(
+                'Your notes',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              const Spacer(),
+              const Text(
+                'Saved automatically',
+                style: TextStyle(color: kMuted, fontSize: 10.5),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _notes,
+            onChanged: _onNotesChanged,
+            minLines: 3,
+            maxLines: 8,
+            style: const TextStyle(fontSize: 13.5, height: 1.45),
+            decoration: InputDecoration(
+              hintText: 'Write anything you want to remember about this lesson',
+              filled: true,
+              fillColor: kSurfaceAlt,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _startQuiz(BuildContext context) async {
     if (lesson.questions.isEmpty) return;
     await Navigator.of(context).push(
@@ -240,8 +395,8 @@ class LessonScreen extends StatelessWidget {
           title: 'Quiz',
           subtitle: lesson.title,
           questions: lesson.questions,
-          onSubmit: (correct, total) =>
-              state.submitLesson(lesson, correct, total),
+          onSubmit: (correct, total, results) =>
+              state.submitLesson(lesson, correct, total, results),
         ),
       ),
     );

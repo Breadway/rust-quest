@@ -4,7 +4,9 @@ import '../app_state.dart';
 import '../models.dart';
 import '../theme.dart';
 import 'course_screen.dart';
+import 'lesson_screen.dart';
 import 'quiz_screen.dart';
+import 'search_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.state});
@@ -17,6 +19,9 @@ class HomeScreen extends StatelessWidget {
       listenable: state,
       builder: (context, _) {
         final courses = state.curriculum.courses;
+        final lastLesson = state.lastLessonId == null
+            ? null
+            : state.curriculum.lessonById[state.lastLessonId!];
         return SafeArea(
           child: Center(
             child: ConstrainedBox(
@@ -25,11 +30,19 @@ class HomeScreen extends StatelessWidget {
                 primary: false,
                 padding: const EdgeInsets.fromLTRB(18, 14, 18, 28),
                 children: [
-                  _header(),
+                  _header(context),
                   const SizedBox(height: 18),
                   _levelCard(),
+                  if (lastLesson != null) ...[
+                    const SizedBox(height: 12),
+                    _resumeCard(context, lastLesson),
+                  ],
                   const SizedBox(height: 12),
                   _reviewCard(context),
+                  const SizedBox(height: 12),
+                  _goalCard(),
+                  const SizedBox(height: 12),
+                  _practiceCard(context),
                   const SizedBox(height: 24),
                   const Text(
                     'Topics',
@@ -83,7 +96,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _header() {
+  Widget _header(BuildContext context) {
     return Row(
       children: [
         const Text(
@@ -93,10 +106,250 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(width: 6),
         const Text('🦀', style: TextStyle(fontSize: 24)),
         const Spacer(),
+        IconButton(
+          tooltip: 'Search',
+          onPressed: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => SearchScreen(state: state))),
+          icon: const Icon(Icons.search, color: kMuted),
+        ),
         _StatChip(icon: '🔥', value: '${state.streak}'),
         const SizedBox(width: 8),
         _StatChip(icon: '🪙', value: '${state.coins}'),
       ],
+    );
+  }
+
+  Widget _resumeCard(BuildContext context, Lesson lesson) {
+    final done = state.isLessonCompleted(lesson.id);
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => LessonScreen(state: state, lesson: lesson),
+        ),
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: kGood.withValues(alpha: .35)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: kPrimary.withValues(alpha: .14),
+                borderRadius: BorderRadius.circular(13),
+              ),
+              child: const Icon(Icons.play_circle_fill, color: kPrimary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    done ? 'Review this lesson' : 'Continue where you left off',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    lesson.title,
+                    style: const TextStyle(color: kMuted, fontSize: 12.5),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: kMuted),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _goalCard() {
+    final progress = state.goalProgress;
+    final done = state.todayQuestions >= state.dailyGoal;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kSurface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: kSurfaceAlt),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            done ? Icons.check_circle : Icons.flag_outlined,
+            color: done ? kGood : kGold,
+            size: 22,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      "Today's goal",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      '${state.todayQuestions} / ${state.dailyGoal}',
+                      style: const TextStyle(color: kMuted, fontSize: 11.5),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: kSurfaceAlt,
+                    color: done ? kGood : kGold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _practiceCard(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () => _openPractice(context),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: kSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: kSurfaceAlt),
+        ),
+        child: Row(
+          children: [
+            const Text('🎯', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Practice',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Timed mixed questions, or drill your weak spots',
+                    style: TextStyle(color: kMuted, fontSize: 11.5),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: kMuted),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openPractice(BuildContext context) async {
+    var count = 10;
+    var weakOnly = false;
+    final start = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: kSurface,
+      showDragHandle: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSt) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Practice',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'No XP, but answers feed your spaced repetition and mastery stats.',
+                style: TextStyle(color: kMuted, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Questions',
+                style: TextStyle(color: kMuted, fontSize: 11.5),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final n in [10, 20])
+                    ChoiceChip(
+                      label: Text('$n'),
+                      selected: count == n,
+                      onSelected: (_) => setSt(() => count = n),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Weak spots only'),
+                subtitle: Text(
+                  '${state.weakQuestions(limit: 500).length} questions answered wrong',
+                  style: const TextStyle(color: kMuted, fontSize: 11),
+                ),
+                value: weakOnly,
+                onChanged: (v) => setSt(() => weakOnly = v),
+              ),
+              const SizedBox(height: 10),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text(
+                  'Start $count questions · ${count == 20 ? '10' : '5'} min',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (start != true || !context.mounted) return;
+    final questions = state.practiceQuestions(count: count, weakOnly: weakOnly);
+    if (questions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No questions available yet')),
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => QuizScreen(
+          title: 'Practice',
+          subtitle: weakOnly ? 'weak spots' : 'all topics',
+          questions: questions,
+          timeLimit: Duration(minutes: count == 20 ? 10 : 5),
+          onSubmit: (correct, total, results) =>
+              state.submitPractice(questions, correct, total, results),
+        ),
+      ),
     );
   }
 
@@ -218,7 +471,8 @@ class HomeScreen extends StatelessWidget {
           title: 'Daily Review',
           subtitle: '${questions.length} questions',
           questions: questions,
-          onSubmit: state.submitReview,
+          onSubmit: (correct, total, results) =>
+              state.submitReview(questions, correct, total, results),
         ),
       ),
     );

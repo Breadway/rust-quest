@@ -27,6 +27,53 @@ const supportedAchievements = <String>{
   'playground_run',
 };
 
+class QuestionStat {
+  QuestionStat();
+
+  int seen = 0;
+  int correct = 0;
+  int wrong = 0;
+  int stage = 0;
+  DateTime? due;
+  DateTime? last;
+
+  Map<String, dynamic> toJson() => {
+    'seen': seen,
+    'correct': correct,
+    'wrong': wrong,
+    'stage': stage,
+    'due': due?.toIso8601String(),
+    'last': last?.toIso8601String(),
+  };
+
+  factory QuestionStat.fromJson(Map<String, dynamic> j) => QuestionStat()
+    ..seen = (j['seen'] as num?)?.toInt() ?? 0
+    ..correct = (j['correct'] as num?)?.toInt() ?? 0
+    ..wrong = (j['wrong'] as num?)?.toInt() ?? 0
+    ..stage = (j['stage'] as num?)?.toInt() ?? 0
+    ..due = DateTime.tryParse(j['due'] as String? ?? '')
+    ..last = DateTime.tryParse(j['last'] as String? ?? '');
+}
+
+class DayStat {
+  DayStat();
+
+  int questions = 0;
+  int correct = 0;
+  int seconds = 0;
+
+  Map<String, dynamic> toJson() => {
+    'questions': questions,
+    'correct': correct,
+    'seconds': seconds,
+  };
+
+  factory DayStat.fromJson(Map<String, dynamic> j) => DayStat()
+    ..questions = (j['questions'] as num?)?.toInt() ?? 0
+    ..correct = (j['correct'] as num?)?.toInt() ?? 0
+    ..seconds = (j['seconds'] as num?)?.toInt() ?? 0;
+}
+
 class QuizResult {
   final int correct;
   final int total;
@@ -75,6 +122,20 @@ class AppState extends ChangeNotifier {
   String? lastReviewDay;
   bool playgroundOpened = false;
   DateTime? updatedAt;
+
+  /// Spaced repetition and analytics.
+  final Map<String, QuestionStat> questionStats = {};
+  final Map<String, DayStat> dailyStats = {};
+
+  /// User content that survives a progress reset.
+  final Map<String, String> notes = {};
+  final Set<String> bookmarks = {};
+
+  String? lastLessonId;
+  int dailyGoal = 10;
+  bool remindersEnabled = false;
+  String reminderTime = '19:00';
+  String? lastReminderDay;
 
   AppState({required this.curriculum, required this.prefs});
 
@@ -190,15 +251,116 @@ class AppState extends ChangeNotifier {
   bool get reviewAvailable =>
       completedLessons.isNotEmpty && lastReviewDay != _today();
 
+  int get questionsAnswered =>
+      questionStats.values.fold(0, (n, s) => n + s.seen);
+
+  double get overallAccuracy {
+    var correct = 0;
+    var wrong = 0;
+    for (final s in questionStats.values) {
+      correct += s.correct;
+      wrong += s.wrong;
+    }
+    final total = correct + wrong;
+    return total == 0 ? 0 : correct / total;
+  }
+
+  double accuracyForCourse(Course course) {
+    var correct = 0;
+    var wrong = 0;
+    for (final lesson in course.allLessons) {
+      for (final q in lesson.questions) {
+        final s = questionStats[q.key];
+        if (s == null) continue;
+        correct += s.correct;
+        wrong += s.wrong;
+      }
+    }
+    final total = correct + wrong;
+    return total == 0 ? 0 : correct / total;
+  }
+
+  int attemptsForCourse(Course course) {
+    var attempts = 0;
+    for (final lesson in course.allLessons) {
+      for (final q in lesson.questions) {
+        attempts += questionStats[q.key]?.seen ?? 0;
+      }
+    }
+    return attempts;
+  }
+
+  DayStat get todayStat => dailyStats[_today()] ?? DayStat();
+
+  int get todayQuestions => todayStat.questions;
+
+  double get goalProgress =>
+      dailyGoal <= 0 ? 0 : (todayQuestions / dailyGoal).clamp(0.0, 1.0);
+
+  List<DayStat> lastDays(int count) => [
+    for (var i = count - 1; i >= 0; i--)
+      dailyStats[_dayOffset(-i)] ?? DayStat(),
+  ];
+
+  /// Questions whose spaced-repetition date has passed.
+  List<Question> dueQuestions({int limit = 5}) {
+    final now = DateTime.now().toUtc();
+    final due = <MapEntry<String, QuestionStat>>[];
+    for (final entry in questionStats.entries) {
+      final dueAt = entry.value.due;
+      if (dueAt != null && !dueAt.isAfter(now)) due.add(entry);
+    }
+    due.sort((a, b) => a.value.due!.compareTo(b.value.due!));
+    return due
+        .map((e) => curriculum.questionByKey[e.key])
+        .whereType<Question>()
+        .take(limit)
+        .toList();
+  }
+
+  /// Questions answered wrong, most-missed first.
+  List<Question> weakQuestions({int limit = 10}) {
+    final entries =
+        questionStats.entries.where((e) => e.value.wrong > 0).toList()
+          ..sort((a, b) {
+            final byWrong = b.value.wrong.compareTo(a.value.wrong);
+            if (byWrong != 0) return byWrong;
+            return (b.value.last ?? DateTime(1970)).compareTo(
+              a.value.last ?? DateTime(1970),
+            );
+          });
+    return entries
+        .take(limit)
+        .map((e) => curriculum.questionByKey[e.key])
+        .whereType<Question>()
+        .toList();
+  }
+
+  List<Question> practiceQuestions({
+    int count = 10,
+    bool weakOnly = false,
+    Random? random,
+  }) {
+    final pool = weakOnly
+        ? weakQuestions(limit: 500)
+        : [for (final l in curriculum.allLessons) ...l.questions];
+    pool.shuffle(random ?? Random());
+    return pool.take(count).toList();
+  }
+
   List<Question> reviewQuestions([Random? random]) {
+    final due = dueQuestions(limit: 5);
+    final seen = {for (final q in due) q.key};
     final pool = <Question>[
       for (final course in curriculum.courses)
         for (final module in course.modules)
           for (final lesson in module.lessons)
-            if (completedLessons.contains(lesson.id)) ...lesson.questions,
+            if (completedLessons.contains(lesson.id))
+              for (final q in lesson.questions)
+                if (!seen.contains(q.key)) q,
     ];
     pool.shuffle(random ?? Random());
-    return pool.take(5).toList();
+    return [...due, ...pool.take(5 - due.length)];
   }
 
   List<Question> checkpointQuestions(Module module, [Random? random]) {
@@ -209,13 +371,49 @@ class AppState extends ChangeNotifier {
 
   // ---------------------------------------------------------------- actions
 
-  Future<QuizResult> submitLesson(Lesson lesson, int correct, int total) async {
+  void _recordAnswers(List<Question> questions, List<bool> results) {
+    for (var i = 0; i < results.length && i < questions.length; i++) {
+      _recordAnswer(questions[i], results[i]);
+    }
+  }
+
+  void _recordAnswer(Question question, bool correct) {
+    if (question.key.isEmpty) return;
+    final day = dailyStats.putIfAbsent(_today(), () => DayStat());
+    day.questions += 1;
+    if (correct) day.correct += 1;
+
+    final stat = questionStats.putIfAbsent(question.key, () => QuestionStat());
+    stat.seen += 1;
+    stat.last = DateTime.now().toUtc();
+    if (correct) {
+      stat.correct += 1;
+      stat.stage = (stat.stage + 1).clamp(0, reviewIntervals.length - 1);
+      stat.due = DateTime.now().toUtc().add(
+        Duration(days: reviewIntervals[stat.stage]),
+      );
+    } else {
+      stat.wrong += 1;
+      stat.stage = 0;
+      stat.due = DateTime.now().toUtc();
+    }
+  }
+
+  static const reviewIntervals = [1, 3, 7, 16, 35];
+
+  Future<QuizResult> submitLesson(
+    Lesson lesson,
+    int correct,
+    int total,
+    List<bool> results,
+  ) async {
     final percent = total == 0 ? 0 : ((correct / total) * 100).round();
     final passed = percent >= 60;
     final first = passed && completedLessons.add(lesson.id);
     var gainedXp = 0;
     var gainedCoins = 0;
 
+    _recordAnswers(lesson.questions, results);
     if (passed && correct == total) perfectLessons.add(lesson.id);
     lessonScores[lesson.id] = max(bestScore(lesson.id), percent);
 
@@ -241,14 +439,17 @@ class AppState extends ChangeNotifier {
 
   Future<QuizResult> submitCheckpoint(
     Module module,
+    List<Question> questions,
     int correct,
     int total,
+    List<bool> results,
   ) async {
     final percent = total == 0 ? 0 : ((correct / total) * 100).round();
     final passed = percent >= 80;
     final first = passed && passedCheckpoints.add(module.checkpointKey);
     var gainedXp = 0;
     var gainedCoins = 0;
+    _recordAnswers(questions, results);
     if (first) {
       gainedXp = 50;
       gainedCoins = 40;
@@ -269,11 +470,17 @@ class AppState extends ChangeNotifier {
     );
   }
 
-  Future<QuizResult> submitReview(int correct, int total) async {
+  Future<QuizResult> submitReview(
+    List<Question> questions,
+    int correct,
+    int total,
+    List<bool> results,
+  ) async {
     final percent = total == 0 ? 0 : ((correct / total) * 100).round();
     final first = lastReviewDay != _today();
     var gainedXp = 0;
     var gainedCoins = 0;
+    _recordAnswers(questions, results);
     if (first) {
       gainedXp = 25;
       gainedCoins = 15;
@@ -292,6 +499,28 @@ class AppState extends ChangeNotifier {
       xpAwarded: gainedXp,
       coinsAwarded: gainedCoins,
       firstCompletion: first,
+      unlocked: unlocked,
+    );
+  }
+
+  Future<QuizResult> submitPractice(
+    List<Question> questions,
+    int correct,
+    int total,
+    List<bool> results,
+  ) async {
+    final percent = total == 0 ? 0 : ((correct / total) * 100).round();
+    _recordAnswers(questions, results);
+    _touchStreak();
+    final unlocked = _evaluateAchievements();
+    await _save();
+    return QuizResult(
+      correct: correct,
+      total: total,
+      passed: percent >= 60,
+      xpAwarded: 0,
+      coinsAwarded: 0,
+      firstCompletion: false,
       unlocked: unlocked,
     );
   }
@@ -331,10 +560,54 @@ class AppState extends ChangeNotifier {
     lastActiveDay = null;
     lastReviewDay = null;
     playgroundOpened = false;
+    questionStats.clear();
+    dailyStats.clear();
+    lastLessonId = null;
+    lastReminderDay = null;
     updatedAt = null;
   }
 
   // --------------------------------------------------------------- internal
+
+  Future<void> setLastLesson(String lessonId) async {
+    if (lastLessonId == lessonId) return;
+    lastLessonId = lessonId;
+    await _save();
+  }
+
+  Future<void> setNote(String lessonId, String text) async {
+    if (text.trim().isEmpty) {
+      notes.remove(lessonId);
+    } else {
+      notes[lessonId] = text;
+    }
+    await _save();
+  }
+
+  Future<void> toggleBookmark(String lessonId) async {
+    if (!bookmarks.add(lessonId)) bookmarks.remove(lessonId);
+    await _save();
+  }
+
+  Future<void> setDailyGoal(int goal) async {
+    dailyGoal = goal.clamp(1, 200);
+    await _save();
+  }
+
+  Future<void> setReminder({
+    required bool enabled,
+    required String time,
+  }) async {
+    remindersEnabled = enabled;
+    reminderTime = time;
+    lastReminderDay = null;
+    await _save();
+  }
+
+  Future<void> markReminderShown() async {
+    lastReminderDay = _today();
+    await _save();
+  }
 
   List<Achievement> _evaluateAchievements() {
     final newly = <Achievement>[];
@@ -415,6 +688,15 @@ class AppState extends ChangeNotifier {
     'completedProjects': completedProjects.toList(),
     'passedCheckpoints': passedCheckpoints.toList(),
     'unlockedAchievements': unlockedAchievements.toList(),
+    'questionStats': questionStats.map((k, v) => MapEntry(k, v.toJson())),
+    'dailyStats': dailyStats.map((k, v) => MapEntry(k, v.toJson())),
+    'notes': notes,
+    'bookmarks': bookmarks.toList(),
+    'lastLessonId': lastLessonId,
+    'dailyGoal': dailyGoal,
+    'remindersEnabled': remindersEnabled,
+    'reminderTime': reminderTime,
+    'lastReminderDay': lastReminderDay,
     'lessonScores': lessonScores,
     'xp': xp,
     'coins': coins,
@@ -466,6 +748,25 @@ class AppState extends ChangeNotifier {
     lastActiveDay = json['lastActiveDay'] as String?;
     lastReviewDay = json['lastReviewDay'] as String?;
     playgroundOpened = json['playgroundOpened'] as bool? ?? false;
+    (json['questionStats'] as Map?)?.forEach((k, v) {
+      questionStats[k as String] = QuestionStat.fromJson(
+        (v as Map).cast<String, dynamic>(),
+      );
+    });
+    (json['dailyStats'] as Map?)?.forEach((k, v) {
+      dailyStats[k as String] = DayStat.fromJson(
+        (v as Map).cast<String, dynamic>(),
+      );
+    });
+    (json['notes'] as Map?)?.forEach((k, v) {
+      notes[k as String] = v as String;
+    });
+    bookmarks.addAll(list('bookmarks'));
+    lastLessonId = json['lastLessonId'] as String?;
+    dailyGoal = (json['dailyGoal'] as num?)?.toInt() ?? 10;
+    remindersEnabled = json['remindersEnabled'] as bool? ?? false;
+    reminderTime = json['reminderTime'] as String? ?? '19:00';
+    lastReminderDay = json['lastReminderDay'] as String?;
     updatedAt = DateTime.tryParse(json['updatedAt'] as String? ?? '');
   }
 

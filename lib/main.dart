@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'app_state.dart';
 import 'models.dart';
 import 'screens/home_screen.dart';
+import 'reminder_service.dart';
 import 'screens/profile_screen.dart';
 import 'sync_service.dart';
 import 'theme.dart';
@@ -24,15 +25,23 @@ Future<void> main() async {
   final curriculum = Curriculum.fromJsonString(source);
   final state = await AppState.load(curriculum);
   final sync = SyncService(state);
+  final reminders = ReminderService(state);
+  await reminders.init();
   if (state.syncConfigured) unawaited(sync.syncNow());
-  runApp(RustQuestApp(state: state, sync: sync));
+  runApp(RustQuestApp(state: state, sync: sync, reminders: reminders));
 }
 
 class RustQuestApp extends StatelessWidget {
-  const RustQuestApp({super.key, required this.state, required this.sync});
+  const RustQuestApp({
+    super.key,
+    required this.state,
+    required this.sync,
+    required this.reminders,
+  });
 
   final AppState state;
   final SyncService sync;
+  final ReminderService reminders;
 
   @override
   Widget build(BuildContext context) {
@@ -40,16 +49,22 @@ class RustQuestApp extends StatelessWidget {
       title: 'Rust Quest',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
-      home: RootShell(state: state, sync: sync),
+      home: RootShell(state: state, sync: sync, reminders: reminders),
     );
   }
 }
 
 class RootShell extends StatefulWidget {
-  const RootShell({super.key, required this.state, required this.sync});
+  const RootShell({
+    super.key,
+    required this.state,
+    required this.sync,
+    required this.reminders,
+  });
 
   final AppState state;
   final SyncService sync;
+  final ReminderService reminders;
 
   @override
   State<RootShell> createState() => _RootShellState();
@@ -68,7 +83,11 @@ class _RootShellState extends State<RootShell> {
           index: _index,
           children: [
             HomeScreen(state: widget.state),
-            ProfileScreen(state: widget.state, sync: widget.sync),
+            ProfileScreen(
+              state: widget.state,
+              sync: widget.sync,
+              reminders: widget.reminders,
+            ),
           ],
         );
         if (wide) {

@@ -17,7 +17,10 @@ class Question {
   final List<String> lines;
   final String code;
 
-  const Question({
+  /// Stable id used for spaced repetition and analytics.
+  String key = '';
+
+  Question({
     required this.type,
     required this.prompt,
     required this.explanation,
@@ -205,14 +208,50 @@ class Achievement {
   );
 }
 
+class LessonBook {
+  final String title;
+  final String chapter;
+  final String url;
+
+  const LessonBook({
+    required this.title,
+    required this.chapter,
+    required this.url,
+  });
+
+  factory LessonBook.fromJson(Map<String, dynamic> j) => LessonBook(
+    title: j['title'] as String? ?? '',
+    chapter: j['chapter'] as String? ?? '',
+    url: j['url'] as String? ?? '',
+  );
+}
+
+class SearchHit {
+  final Lesson lesson;
+  final String snippet;
+  final int score;
+
+  const SearchHit({
+    required this.lesson,
+    required this.snippet,
+    required this.score,
+  });
+}
+
 class Curriculum {
   final List<Course> courses;
   final List<Achievement> achievements;
+  final Map<String, LessonBook> bookRefs;
   final Map<String, Lesson> lessonById = {};
   final Map<String, Module> moduleById = {};
   final Map<String, Course> courseById = {};
+  final Map<String, Question> questionByKey = {};
 
-  Curriculum({required this.courses, required this.achievements}) {
+  Curriculum({
+    required this.courses,
+    required this.achievements,
+    this.bookRefs = const {},
+  }) {
     for (final c in courses) {
       courseById[c.id] = c;
       for (final m in c.modules) {
@@ -222,6 +261,11 @@ class Curriculum {
           l.module = m;
           l.course = c;
           lessonById[l.id] = l;
+          for (var i = 0; i < l.questions.length; i++) {
+            final question = l.questions[i];
+            question.key = '${l.id}#$i';
+            questionByKey[question.key] = question;
+          }
         }
       }
     }
@@ -235,8 +279,22 @@ class Curriculum {
     final achievements = ((root['achievements'] as List?) ?? const [])
         .map((a) => Achievement.fromJson((a as Map).cast<String, dynamic>()))
         .toList();
-    return Curriculum(courses: courses, achievements: achievements);
+    final bookRefs = ((root['bookRefs'] as Map?) ?? const {}).map(
+      (k, v) => MapEntry(
+        k as String,
+        LessonBook.fromJson((v as Map).cast<String, dynamic>()),
+      ),
+    );
+    return Curriculum(
+      courses: courses,
+      achievements: achievements,
+      bookRefs: bookRefs,
+    );
   }
+
+  List<Lesson> get allLessons => [for (final c in courses) ...c.allLessons];
+
+  LessonBook? bookRefFor(String lessonId) => bookRefs[lessonId];
 
   int get moduleCount => courses.fold(0, (n, c) => n + c.modules.length);
   int get lessonCount => courses.fold(0, (n, c) => n + c.lessonCount);
@@ -250,4 +308,51 @@ class Curriculum {
               m + mod.lessons.fold(0, (l, les) => l + les.questions.length),
         ),
   );
+
+  /// Simple weighted search over titles, bodies and questions.
+  List<SearchHit> search(String query, {int limit = 60}) {
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return const [];
+    final hits = <SearchHit>[];
+    for (final lesson in allLessons) {
+      var score = 0;
+      var snippet = '';
+      if (lesson.title.toLowerCase().contains(q)) {
+        score += 10;
+        snippet = lesson.title;
+      }
+      final bodyIndex = lesson.body.toLowerCase().indexOf(q);
+      if (bodyIndex >= 0) {
+        score += 3;
+        snippet = _snippet(lesson.body, bodyIndex);
+      }
+      for (final question in lesson.questions) {
+        final haystack =
+            '${question.prompt}\n${question.options.join('\n')}\n${question.explanation}'
+                .toLowerCase();
+        if (haystack.contains(q)) {
+          score += 2;
+          if (snippet.isEmpty) snippet = question.prompt;
+          break;
+        }
+      }
+      if (score > 0) {
+        hits.add(SearchHit(lesson: lesson, snippet: snippet, score: score));
+      }
+    }
+    hits.sort((a, b) => b.score.compareTo(a.score));
+    return hits.take(limit).toList();
+  }
+
+  static String _snippet(String body, int index) {
+    final start = index - 50 < 0 ? 0 : index - 50;
+    final end = index + 110 > body.length ? body.length : index + 110;
+    final text = body
+        .substring(start, end)
+        .replaceAll('\n', ' ')
+        .replaceAll(RegExp(r'[#*`>|-]+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    return '${start > 0 ? '… ' : ''}$text${end < body.length ? ' …' : ''}';
+  }
 }

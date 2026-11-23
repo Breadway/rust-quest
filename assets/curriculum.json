@@ -13199,5 +13199,622 @@
    "chapter": "Ch. 1.2 — Hello, World!",
    "url": "https://doc.rust-lang.org/book/ch01-02-hello-world.html"
   }
- ]
+ ],
+ "bookRefs": {
+  "basics_hello": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 1.2 — Hello, World!",
+   "url": "https://doc.rust-lang.org/book/ch01-02-hello-world.html"
+  },
+  "basics_vars": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.1 — Variables and Mutability",
+   "url": "https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html"
+  },
+  "basics_types": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.2 — Data Types",
+   "url": "https://doc.rust-lang.org/book/ch03-02-data-types.html"
+  },
+  "basics_comments": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.4 — Comments",
+   "url": "https://doc.rust-lang.org/book/ch03-04-comments.html"
+  },
+  "basics_functions": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.3 — Functions",
+   "url": "https://doc.rust-lang.org/book/ch03-03-how-functions-work.html"
+  },
+  "basics_if": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.5 — Control Flow",
+   "url": "https://doc.rust-lang.org/book/ch03-05-control-flow.html"
+  },
+  "basics_loops": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.5 — Control Flow (loops)",
+   "url": "https://doc.rust-lang.org/book/ch03-05-control-flow.html"
+  },
+  "basics_expressions": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.3 — Statements & Expressions",
+   "url": "https://doc.rust-lang.org/book/ch03-03-how-functions-work.html"
+  },
+  "basics_match": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 6.2 — The match Construct",
+   "url": "https://doc.rust-lang.org/book/ch06-02-match.html"
+  },
+  "basics_numbers": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.2 — Data Types (numeric)",
+   "url": "https://doc.rust-lang.org/book/ch03-02-data-types.html"
+  },
+  "basics_casting": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.2 — Data Types (casting)",
+   "url": "https://doc.rust-lang.org/book/ch03-02-data-types.html"
+  },
+  "basics_strings": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 8.2 — Strings",
+   "url": "https://doc.rust-lang.org/book/ch08-02-strings.html"
+  },
+  "basics_bool_logic": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.2 — Data Types (bool)",
+   "url": "https://doc.rust-lang.org/book/ch03-02-data-types.html"
+  },
+  "basics_operators": {
+   "title": "The Rust Book",
+   "chapter": "Appendix B — Operators",
+   "url": "https://doc.rust-lang.org/book/appendix-02-operators.html"
+  },
+  "basics_input": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 2 — Programming a Guessing Game",
+   "url": "https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html"
+  },
+  "basics_parse": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 2 — Guessing Game (parsing input)",
+   "url": "https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html"
+  },
+  "basics_const": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.1 — Constants",
+   "url": "https://doc.rust-lang.org/book/ch03-01-variables-and-mutability.html"
+  },
+  "basics_scope": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.1 — Scope (ownership intro)",
+   "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html"
+  },
+  "basics_tuples": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.2 — Compound Types: Tuples",
+   "url": "https://doc.rust-lang.org/book/ch03-02-data-types.html"
+  },
+  "basics_arrays": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.2 — Compound Types: Arrays",
+   "url": "https://doc.rust-lang.org/book/ch03-02-data-types.html"
+  },
+  "basics_vec_intro": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 8.1 — Vectors",
+   "url": "https://doc.rust-lang.org/book/ch08-01-vectors.html"
+  },
+  "basics_format": {
+   "title": "Std Library Docs",
+   "chapter": "std::fmt — Formatting",
+   "url": "https://doc.rust-lang.org/std/fmt/"
+  },
+  "basics_debugging": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 5.2 — Derived Traits & dbg!",
+   "url": "https://doc.rust-lang.org/book/ch05-02-example-structs.html"
+  },
+  "own_ownership": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.1 — What Is Ownership?",
+   "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html"
+  },
+  "own_borrowing": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.2 — References & Borrowing",
+   "url": "https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html"
+  },
+  "own_slices": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.3 — Slices",
+   "url": "https://doc.rust-lang.org/book/ch04-03-slices.html"
+  },
+  "own_stack_heap": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.1 — The Stack and the Heap",
+   "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html"
+  },
+  "own_clone_copy": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.1 — Clone and Copy",
+   "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html"
+  },
+  "own_lifetimes": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 10.3 — Lifetimes",
+   "url": "https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html"
+  },
+  "own_fn_params": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.1 — Ownership & Functions",
+   "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html"
+  },
+  "own_mut_refs_depth": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.2 — Mutable References",
+   "url": "https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html"
+  },
+  "own_drop": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 15.3 — The Drop Trait",
+   "url": "https://doc.rust-lang.org/book/ch15-03-drop.html"
+  },
+  "own_return_multi": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.1 — Return Values & Scope",
+   "url": "https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html"
+  },
+  "own_borrow_checker": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 4.2 — The Rules of References",
+   "url": "https://doc.rust-lang.org/book/ch04-02-references-and-borrowing.html"
+  },
+  "se_structs": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 5.1 — Defining Structs",
+   "url": "https://doc.rust-lang.org/book/ch05-01-defining-structs.html"
+  },
+  "se_methods": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 5.3 — Method Syntax",
+   "url": "https://doc.rust-lang.org/book/ch05-03-method-syntax.html"
+  },
+  "se_enums": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 6.1 — Defining an Enum",
+   "url": "https://doc.rust-lang.org/book/ch06-01-defining-an-enum.html"
+  },
+  "se_match": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 6.2 — The match Construct",
+   "url": "https://doc.rust-lang.org/book/ch06-02-match.html"
+  },
+  "structs_tuple_unit": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 5.1 — Tuple & Unit Structs",
+   "url": "https://doc.rust-lang.org/book/ch05-01-defining-structs.html"
+  },
+  "structs_derive": {
+   "title": "The Rust Book",
+   "chapter": "Appendix C — Derivable Traits",
+   "url": "https://doc.rust-lang.org/book/appendix-03-derivable-traits.html"
+  },
+  "structs_methods": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 5.3 — Method Syntax",
+   "url": "https://doc.rust-lang.org/book/ch05-03-method-syntax.html"
+  },
+  "structs_result": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 9.2 — Recoverable Errors with Result",
+   "url": "https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html"
+  },
+  "structs_state_machine": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 18.3 — OO Design Patterns (state)",
+   "url": "https://doc.rust-lang.org/book/ch18-03-oo-design-patterns.html"
+  },
+  "col_vec": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 8.1 — Vectors",
+   "url": "https://doc.rust-lang.org/book/ch08-01-vectors.html"
+  },
+  "col_string": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 8.2 — Strings",
+   "url": "https://doc.rust-lang.org/book/ch08-02-strings.html"
+  },
+  "col_hashmap": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 8.3 — Hash Maps",
+   "url": "https://doc.rust-lang.org/book/ch08-03-hash-maps.html"
+  },
+  "coll_hashset": {
+   "title": "Std Library Docs",
+   "chapter": "std::collections::HashSet",
+   "url": "https://doc.rust-lang.org/std/collections/struct.HashSet.html"
+  },
+  "coll_btreemap": {
+   "title": "Std Library Docs",
+   "chapter": "std::collections (BTreeMap)",
+   "url": "https://doc.rust-lang.org/std/collections/index.html"
+  },
+  "coll_entry": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 8.3 — Hash Maps (entry API)",
+   "url": "https://doc.rust-lang.org/book/ch08-03-hash-maps.html"
+  },
+  "coll_iter_collect": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 13.2 — Iterators",
+   "url": "https://doc.rust-lang.org/book/ch13-02-iterators.html"
+  },
+  "coll_nested": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 8.3 — Hash Maps (nesting)",
+   "url": "https://doc.rust-lang.org/book/ch08-03-hash-maps.html"
+  },
+  "err_panic": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 9.1 — Unrecoverable Errors with panic!",
+   "url": "https://doc.rust-lang.org/book/ch09-01-unrecoverable-errors-with-panic.html"
+  },
+  "err_result": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 9.2 — Recoverable Errors with Result",
+   "url": "https://doc.rust-lang.org/book/ch09-02-recoverable-errors-with-result.html"
+  },
+  "gt_generics": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 10.1 — Generic Data Types",
+   "url": "https://doc.rust-lang.org/book/ch10-01-syntax.html"
+  },
+  "gt_traits": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 10.2 — Traits",
+   "url": "https://doc.rust-lang.org/book/ch10-02-traits.html"
+  },
+  "gt_lifetimes": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 10.3 — Lifetimes",
+   "url": "https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html"
+  },
+  "gen_trait_bounds": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 10.2 — Trait Bounds",
+   "url": "https://doc.rust-lang.org/book/ch10-02-traits.html"
+  },
+  "gen_generic_structs": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 10.1 — Generic Structs",
+   "url": "https://doc.rust-lang.org/book/ch10-01-syntax.html"
+  },
+  "gen_default_methods": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 10.2 — Default Implementations",
+   "url": "https://doc.rust-lang.org/book/ch10-02-traits.html"
+  },
+  "gen_common_traits": {
+   "title": "The Rust Book",
+   "chapter": "Appendix C — Derivable Traits",
+   "url": "https://doc.rust-lang.org/book/appendix-03-derivable-traits.html"
+  },
+  "gen_trait_objects": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 18.2 — Trait Objects",
+   "url": "https://doc.rust-lang.org/book/ch18-02-trait-objects.html"
+  },
+  "fp_closures": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 13.1 — Closures",
+   "url": "https://doc.rust-lang.org/book/ch13-01-closures.html"
+  },
+  "fp_iterators": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 13.2 — Iterators",
+   "url": "https://doc.rust-lang.org/book/ch13-02-iterators.html"
+  },
+  "fn_closure_traits": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 13.1 — Fn/FnMut/FnOnce",
+   "url": "https://doc.rust-lang.org/book/ch13-01-closures.html"
+  },
+  "fn_iter_adapters": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 13.2 — Iterator Adapters",
+   "url": "https://doc.rust-lang.org/book/ch13-02-iterators.html"
+  },
+  "fn_fold": {
+   "title": "Std Library Docs",
+   "chapter": "Iterator::fold & friends",
+   "url": "https://doc.rust-lang.org/std/iter/trait.Iterator.html"
+  },
+  "fn_custom_iterator": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 13.2 — Implementing Iterator",
+   "url": "https://doc.rust-lang.org/book/ch13-02-iterators.html"
+  },
+  "fn_combinators": {
+   "title": "Std Library Docs",
+   "chapter": "Option & Result combinators",
+   "url": "https://doc.rust-lang.org/std/option/"
+  },
+  "sp_box": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 15.1 — Box<T>",
+   "url": "https://doc.rust-lang.org/book/ch15-01-box.html"
+  },
+  "sp_rc_refcell": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 15.4 — Rc<T> (and RefCell)",
+   "url": "https://doc.rust-lang.org/book/ch15-04-rc.html"
+  },
+  "conc_threads": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 16.1 — Threads",
+   "url": "https://doc.rust-lang.org/book/ch16-01-threads.html"
+  },
+  "conc_channels": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 16.2 — Message Passing",
+   "url": "https://doc.rust-lang.org/book/ch16-02-message-passing.html"
+  },
+  "conc_mutex": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 16.3 — Shared-State Concurrency",
+   "url": "https://doc.rust-lang.org/book/ch16-03-shared-state.html"
+  },
+  "conc_arc": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 16.3 — Arc<T>",
+   "url": "https://doc.rust-lang.org/book/ch16-03-shared-state.html"
+  },
+  "conc_shared": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 16.3 — Shared State",
+   "url": "https://doc.rust-lang.org/book/ch16-03-shared-state.html"
+  },
+  "conc_send_sync": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 16.4 — Send and Sync",
+   "url": "https://doc.rust-lang.org/book/ch16-04-extensible-concurrency-sync-and-send.html"
+  },
+  "conc_async": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 17 — Async & Await",
+   "url": "https://doc.rust-lang.org/book/ch17-00-async-await.html"
+  },
+  "conc_async_tasks": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 17.1 — Futures & Syntax",
+   "url": "https://doc.rust-lang.org/book/ch17-01-futures-and-syntax.html"
+  },
+  "conc_rayon": {
+   "title": "Crate Docs",
+   "chapter": "rayon — data parallelism",
+   "url": "https://docs.rs/rayon"
+  },
+  "adv_unsafe": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 20.1 — Unsafe Rust",
+   "url": "https://doc.rust-lang.org/book/ch20-01-unsafe-rust.html"
+  },
+  "adv_macros": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 20.5 — Macros",
+   "url": "https://doc.rust-lang.org/book/ch20-05-macros.html"
+  },
+  "ml_intro": {
+   "title": "Are We Learning Yet?",
+   "chapter": "The Rust ML ecosystem",
+   "url": "https://www.arewelearningyet.com/"
+  },
+  "ml_ndarray": {
+   "title": "Crate Docs",
+   "chapter": "ndarray — N-dimensional arrays",
+   "url": "https://docs.rs/ndarray"
+  },
+  "ml_linreg": {
+   "title": "Crate Docs",
+   "chapter": "linfa — ML toolkit (regression)",
+   "url": "https://docs.rs/linfa"
+  },
+  "ml_gradient_descent": {
+   "title": "Crate Docs",
+   "chapter": "linfa — optimisation",
+   "url": "https://docs.rs/linfa"
+  },
+  "ml_knn": {
+   "title": "Crate Docs",
+   "chapter": "linfa — nearest neighbours",
+   "url": "https://docs.rs/linfa"
+  },
+  "ml_logistic": {
+   "title": "Crate Docs",
+   "chapter": "linfa — logistic regression",
+   "url": "https://docs.rs/linfa"
+  },
+  "ml_metrics": {
+   "title": "Crate Docs",
+   "chapter": "linfa — model evaluation",
+   "url": "https://docs.rs/linfa"
+  },
+  "ml_perceptron": {
+   "title": "Crate Docs",
+   "chapter": "burn — deep learning in Rust",
+   "url": "https://docs.rs/burn"
+  },
+  "ml_frameworks": {
+   "title": "Crate Docs",
+   "chapter": "burn — deep learning framework",
+   "url": "https://docs.rs/burn"
+  },
+  "ml_llm": {
+   "title": "Crate Docs",
+   "chapter": "candle — minimalist ML for LLMs",
+   "url": "https://docs.rs/candle-core"
+  },
+  "ml_deploy": {
+   "title": "Crate Docs",
+   "chapter": "candle — inference & deployment",
+   "url": "https://docs.rs/candle-core"
+  },
+  "emb_intro": {
+   "title": "The Embedded Rust Book",
+   "chapter": "Introduction",
+   "url": "https://docs.rust-embedded.org/book/intro/index.html"
+  },
+  "emb_no_std": {
+   "title": "The Embedded Rust Book",
+   "chapter": "A no_std Rust Environment",
+   "url": "https://docs.rust-embedded.org/book/intro/no-std.html"
+  },
+  "emb_gpio": {
+   "title": "The Embedded Rust Book",
+   "chapter": "Getting Started — Hardware",
+   "url": "https://docs.rust-embedded.org/book/start/hardware.html"
+  },
+  "emb_registers": {
+   "title": "The Embedded Rust Book",
+   "chapter": "Memory-Mapped Registers",
+   "url": "https://docs.rust-embedded.org/book/start/registers.html"
+  },
+  "emb_interrupts": {
+   "title": "The Embedded Rust Book",
+   "chapter": "Interrupts",
+   "url": "https://docs.rust-embedded.org/book/start/interrupts.html"
+  },
+  "emb_uart": {
+   "title": "The Embedded Rust Book",
+   "chapter": "Peripherals",
+   "url": "https://docs.rust-embedded.org/book/peripherals/index.html"
+  },
+  "emb_i2c_spi": {
+   "title": "Crate Docs",
+   "chapter": "embedded-hal — I²C & SPI traits",
+   "url": "https://docs.rs/embedded-hal"
+  },
+  "emb_sensors": {
+   "title": "Crate Docs",
+   "chapter": "embedded-hal — driver ecosystem",
+   "url": "https://docs.rs/embedded-hal"
+  },
+  "emb_embassy": {
+   "title": "Embassy Book",
+   "chapter": "Async embedded with Embassy",
+   "url": "https://embassy.dev/book/"
+  },
+  "emb_low_power": {
+   "title": "The Embedded Rust Book",
+   "chapter": "The Embedded Rust Book",
+   "url": "https://docs.rust-embedded.org/book/"
+  },
+  "emb_capstone": {
+   "title": "The Embedded Rust Book",
+   "chapter": "The Embedded Rust Book",
+   "url": "https://docs.rust-embedded.org/book/"
+  },
+  "prod_layout": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 7 — Packages, Crates & Modules",
+   "url": "https://doc.rust-lang.org/book/ch07-00-managing-growing-projects-with-packages-crates-and-modules.html"
+  },
+  "prod_cargo": {
+   "title": "The Cargo Book",
+   "chapter": "Cargo — the Rust build tool",
+   "url": "https://doc.rust-lang.org/cargo/"
+  },
+  "prod_errors": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 9.3 — To panic! or Not to panic!",
+   "url": "https://doc.rust-lang.org/book/ch09-03-to-panic-or-not-to-panic.html"
+  },
+  "prod_testing": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 11 — Writing Automated Tests",
+   "url": "https://doc.rust-lang.org/book/ch11-00-testing.html"
+  },
+  "prod_ci": {
+   "title": "The Cargo Book",
+   "chapter": "Continuous Integration",
+   "url": "https://doc.rust-lang.org/cargo/guide/continuous-integration.html"
+  },
+  "prod_logging": {
+   "title": "Crate Docs",
+   "chapter": "tracing — structured logging",
+   "url": "https://docs.rs/tracing"
+  },
+  "prod_config": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 12.5 — Environment Variables",
+   "url": "https://doc.rust-lang.org/book/ch12-05-working-with-environment-variables.html"
+  },
+  "prod_benchmark": {
+   "title": "Crate Docs",
+   "chapter": "criterion — benchmarking",
+   "url": "https://docs.rs/criterion"
+  },
+  "prod_publish": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 14.2 — Publishing to crates.io",
+   "url": "https://doc.rust-lang.org/book/ch14-02-publishing-to-crates-io.html"
+  },
+  "prod_security": {
+   "title": "RustSec",
+   "chapter": "Security advisories & cargo-audit",
+   "url": "https://rustsec.org/"
+  },
+  "prod_api_design": {
+   "title": "Rust API Guidelines",
+   "chapter": "Official API design checklist",
+   "url": "https://rust-lang.github.io/api-guidelines/"
+  },
+  "proj_guess": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 2 — Programming a Guessing Game",
+   "url": "https://doc.rust-lang.org/book/ch02-00-guessing-game-tutorial.html"
+  },
+  "proj_calculator": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.5 — Control Flow",
+   "url": "https://doc.rust-lang.org/book/ch03-05-control-flow.html"
+  },
+  "proj_temps": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 3.5 — Control Flow (exercises)",
+   "url": "https://doc.rust-lang.org/book/ch03-05-control-flow.html"
+  },
+  "proj_wordfreq": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 8.3 — Hash Maps (exercises)",
+   "url": "https://doc.rust-lang.org/book/ch08-03-hash-maps.html"
+  },
+  "proj_bank": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 5.3 — Method Syntax",
+   "url": "https://doc.rust-lang.org/book/ch05-03-method-syntax.html"
+  },
+  "proj_todo": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 12 — An I/O Project",
+   "url": "https://doc.rust-lang.org/book/ch12-00-an-io-project.html"
+  },
+  "proj_minigrep": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 12 — An I/O Project: minigrep",
+   "url": "https://doc.rust-lang.org/book/ch12-00-an-io-project.html"
+  },
+  "proj_server": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 21 — Final Project: A Web Server",
+   "url": "https://doc.rust-lang.org/book/ch21-00-final-project-a-web-server.html"
+  },
+  "proj_url_shortener": {
+   "title": "The Rust Book",
+   "chapter": "Ch. 8.3 — Hash Maps",
+   "url": "https://doc.rust-lang.org/book/ch08-03-hash-maps.html"
+  }
+ }
 }
