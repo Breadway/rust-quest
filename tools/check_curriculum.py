@@ -76,6 +76,8 @@ def main(path="assets/curriculum.json"):
                         errors.append(f"{qw}: missing prompt")
                     if not (q.get("explanation") or "").strip():
                         warnings.append(f"{qw}: missing explanation")
+                    if t == "codeOutput" and not (q.get("code") or "").strip():
+                        errors.append(f"{qw}: codeOutput needs a code snippet")
                     if t in ("multipleChoice", "codeOutput"):
                         options = q.get("options") or []
                         if len(options) < 2:

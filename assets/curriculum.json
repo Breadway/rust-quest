@@ -168,7 +168,8 @@
           "compile error",
           "undefined"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "let x = 5;\nlet x = x * 2;\nprintln!(\"{}\", x);"
         },
         {
          "type": "multipleChoice",
@@ -224,7 +225,8 @@
           "Both lines",
           "Neither, it compiles"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "let x = 5;   // line 1\nx = 6;       // line 2"
         },
         {
          "type": "trueFalse",
@@ -294,7 +296,8 @@
           "Compile error or runtime panic",
           "arr grows to length 6"
          ],
-         "answer": 2
+         "answer": 2,
+         "code": "let arr = [1, 2, 3];\nlet x = arr[5];"
         },
         {
          "type": "codeOutput",
@@ -489,7 +492,8 @@
           "4",
           "Compile error"
          ],
-         "answer": 2
+         "answer": 2,
+         "code": "fn f() -> i32 {\n    let x = 3;\n    x + 1\n}"
         },
         {
          "type": "multipleChoice",
@@ -501,7 +505,8 @@
           "Missing `return` keyword is always an error",
           "x is immutable"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "fn f() -> i32 {\n    let x = 3;\n    x + 1;\n}"
         },
         {
          "type": "trueFalse",
@@ -595,7 +600,8 @@
           "println! cannot be inside if",
           "It compiles fine"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "let n = 3;\nif n {\n    println!(\"hi\");\n}"
         },
         {
          "type": "trueFalse",
@@ -621,7 +627,8 @@
           "true",
           "Compile error"
          ],
-         "answer": 0
+         "answer": 0,
+         "code": "let x = if true { 5 } else { 6 };"
         },
         {
          "type": "trueFalse",
@@ -711,7 +718,8 @@
           "4",
           "Infinite"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "for i in 0..3 {\n    println!(\"{i}\");\n}"
         },
         {
          "type": "fillBlank",
@@ -731,7 +739,8 @@
           "Compile error",
           "undefined"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "let x = loop {\n    break 7;\n};"
         },
         {
          "type": "trueFalse",
@@ -992,7 +1001,8 @@
           "Arms need semicolons",
           "It compiles fine"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "let n: u8 = 200;\nmatch n {\n    0 => \"zero\",\n    1 => \"one\",\n}"
         }
        ]
       }
@@ -1890,7 +1900,8 @@
           "println! cannot print y",
           "It compiles fine"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "fn main() {\n    {\n        let y = 10;\n    }\n    println!(\"{y}\");\n}"
         },
         {
          "type": "trueFalse",
@@ -2493,7 +2504,8 @@
           "String cannot be assigned",
           "It compiles fine"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "let s1 = String::from(\"hi\");\nlet s2 = s1;\nprintln!(\"{s1}\");"
         },
         {
          "type": "trueFalse",
@@ -2532,7 +2544,8 @@
           "s is automatically cloned",
           "Compile error at take(s)"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "fn take(s: String) {}\n\nlet s = String::from(\"hi\");\ntake(s);\n// use s here?"
         },
         {
          "type": "codeOutput",
@@ -2608,7 +2621,8 @@
           "r1 must be used before r2 is created",
           "Missing clone()"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "let mut s = String::from(\"hi\");\nlet r1 = &mut s;\nlet r2 = &mut s;\nprintln!(\"{r1} {r2}\");"
         },
         {
          "type": "trueFalse",
@@ -2736,7 +2750,8 @@
           "[20, 30, 40, 50]",
           "[30, 40, 50]"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "let a = [10, 20, 30, 40, 50];\nlet s = &a[1..4];"
         },
         {
          "type": "trueFalse",
@@ -3051,7 +3066,8 @@
           "Missing a semicolon",
           "It compiles fine"
          ],
-         "answer": 1
+         "answer": 1,
+         "code": "fn dangle() -> &String {\n    let s = String::from(\"hi\");\n    &s\n}"
         },
         {
          "type": "trueFalse",
@@ -11615,6 +11631,905 @@
           "end"
          ],
          "explanation": "The module is declared, then `on_load` registers the subscription."
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "advanced",
+   "title": "Advanced Rust",
+   "subtitle": "The gaps between intermediate and senior: soundness, macros, async internals, FFI, performance and design",
+   "icon": "⚙️",
+   "unlockedByDefault": true,
+   "modules": [
+    {
+     "id": "adv-soundness",
+     "title": "Soundness and Layout",
+     "icon": "🧱",
+     "lessons": [
+      {
+       "id": "adv_unsafe_soundness",
+       "title": "Unsafe is a contract, not a switch",
+       "xp": 70,
+       "coins": 55,
+       "body": "`unsafe` does not turn off the borrow checker. It grants five abilities: dereference raw pointers, call `unsafe` functions, touch mutable statics, implement `unsafe` traits, and access union fields. Everything else stays checked.\n\nThat means every `unsafe` block is a proof obligation. The block is sound only if all callers of the enclosing API cannot break the invariants the compiler normally enforces: a `&mut T` is exclusive, a reference is aligned and points to a live initialized value of the right type, and no data race is possible.\n\nThe standard library's `split_at_mut` is the classic example:\n\n```rust\nfn split_at_mut<T>(values: &mut [T], mid: usize) -> (&mut [T], &mut [T]) {\n    let len = values.len();\n    let ptr = values.as_mut_ptr();\n    assert!(mid <= len);\n    // SAFETY: mid <= len, both ranges are inside the same allocation,\n    // are disjoint, aligned and initialized, and the borrow of `values`\n    // guarantees no other reference aliases them.\n    unsafe {\n        (\n            std::slice::from_raw_parts_mut(ptr, mid),\n            std::slice::from_raw_parts_mut(ptr.add(mid), len - mid),\n        )\n    }\n}\n```\n\nThe `assert!` is part of the proof. Without it, `mid > len` would build an invalid slice and any later use is undefined behaviour.\n\nPractical rules:\n\n- Prefer safe wrappers (`bytemuck`, `zerocopy`, `MaybeUninit` helpers) to hand-written pointer code.\n- `MaybeUninit` for uninitialized memory; call `assume_init` only after every byte is initialized.\n- `transmute` is almost always the wrong tool: sizes and validity invariants must match exactly.\n- Run `cargo +nightly miri test` on unsafe code. Miri catches aliasing violations that tests and the borrow checker cannot.\n- Document `# Safety` on every `unsafe fn`: what the caller must guarantee, not what the function does.\n\nAn `unsafe` block with no comment is a bug report waiting to happen.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Which of these does `unsafe` allow?",
+         "options": [
+          "Ignoring the borrow checker entirely",
+          "Dereferencing a raw pointer",
+          "Using a moved value",
+          "Skipping type checks"
+         ],
+         "answer": 1,
+         "explanation": "Only five specific abilities are unlocked; ownership and type checking still apply."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "If an `unsafe` block compiles, the code is sound.",
+         "answer": false,
+         "explanation": "Compiling only means the syntax is valid. Soundness is a proof about all callers and all inputs."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Every `unsafe fn` should document its caller obligations under a `# ____` heading.",
+         "answers": [
+          "Safety"
+         ],
+         "explanation": "The `# Safety` section is the contract the caller must uphold."
+        },
+        {
+         "type": "codeOutput",
+         "prompt": "What is the result of splitting a slice of length 4 at 2?",
+         "code": "let mut v = [1, 2, 3, 4];\nlet (a, b) = split_at_mut(&mut v, 2);\nprintln!(\"{:?} {:?}\", a, b);",
+         "options": [
+          "[1, 2] [3, 4]",
+          "[1, 2, 3] [4]",
+          "[1] [2, 3, 4]",
+          "it panics"
+         ],
+         "answer": 0,
+         "explanation": "`mid` is the split point: the first slice is 0..2 and the second is 2..4."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Build the disjoint slices safely.",
+         "lines": [
+          "let len = values.len();",
+          "let ptr = values.as_mut_ptr();",
+          "assert!(mid <= len);",
+          "unsafe {",
+          "    (slice::from_raw_parts_mut(ptr, mid),",
+          "     slice::from_raw_parts_mut(ptr.add(mid), len - mid))",
+          "}"
+         ],
+         "explanation": "Bounds check first, then construct the two non-overlapping halves."
+        }
+       ]
+      },
+      {
+       "id": "adv_layout_allocation",
+       "title": "Layout, allocators and zero-copy",
+       "xp": 65,
+       "coins": 50,
+       "body": "Rust's default layout is unspecified. Once memory crosses an FFI boundary or is reinterpreted as bytes, layout becomes part of the contract.\n\n- `#[repr(C)]` gives C field order and padding; use it for FFI structs.\n- `#[repr(transparent)]` says a wrapper has exactly the same layout as its field, which is how newtypes stay free.\n- `#[repr(packed)]` removes padding. Taking a reference to a packed field is undefined behaviour in general; copy the value out instead.\n- `size_of::<T>()`, `align_of::<T>()` and `offset_of!` are the tools for checking assumptions. Alignment is a hard requirement: a `u64` pointer must be 8-byte aligned.\n\nAllocation is explicit:\n\n```rust\nuse std::alloc::{alloc, dealloc, Layout};\n\nlet layout = Layout::new::<[u8; 1024]>();\nlet ptr = unsafe { alloc(layout) };\n// ... use the block ...\nunsafe { dealloc(ptr, layout) };\n```\n\n`dealloc` must receive the same layout used for `alloc`. A custom `GlobalAlloc` is how an arena or a tracking allocator plugs in; `bumpalo` and `typed-arena` are the usual crates when the whole graph lives for one request or one program phase.\n\nZero-copy means borrowing the bytes instead of copying them:\n\n- `bytes::Bytes` is a cheap, shared, sliceable byte buffer.\n- `bytemuck` safely casts plain-old-data between types and byte slices, checking size and alignment.\n- `zerocopy` does the same at compile time for many cases.\n- Endianness is not layout: `u32::from_le_bytes` before interpreting network data.\n\nReinterpreting a `Vec<u8>` as `Vec<u32>` is not a cast; it is a different length, alignment and ownership story. Use a typed parser, `bytemuck::cast_slice`, or copy.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Which attribute guarantees C-compatible field order for an FFI struct?",
+         "options": [
+          "#[repr(transparent)]",
+          "#[repr(C)]",
+          "#[repr(packed)]",
+          "#[derive(Copy)]"
+         ],
+         "answer": 1,
+         "explanation": "`repr(C)` fixes order and padding to the platform C ABI."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "Taking a reference to a field of a `#[repr(packed)]` struct can be undefined behaviour.",
+         "answer": true,
+         "explanation": "Packed fields may be unaligned; references assume alignment. Copy the value instead."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "The layout passed to `dealloc` must match the one passed to `____`.",
+         "answers": [
+          "alloc"
+         ],
+         "explanation": "Allocator contracts pair the allocation and its layout exactly."
+        },
+        {
+         "type": "codeOutput",
+         "prompt": "What does this print on a 64-bit platform?",
+         "code": "use std::mem::size_of;\nprintln!(\"{}\", size_of::<(u8, u32)>());",
+         "options": [
+          "5",
+          "8",
+          "4",
+          "16"
+         ],
+         "answer": 1,
+         "explanation": "The `u32` needs 4-byte alignment, so the tuple is padded to 8 bytes; layout is not the sum of fields."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Allocate, use, free with the same layout.",
+         "lines": [
+          "let layout = Layout::new::<[u8; 1024]>();",
+          "let ptr = unsafe { alloc(layout) };",
+          "// write through ptr",
+          "unsafe { dealloc(ptr, layout) };"
+         ],
+         "explanation": "The layout is created once and reused for deallocation."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "adv-meta",
+     "title": "Metaprogramming",
+     "icon": "🪄",
+     "lessons": [
+      {
+       "id": "adv_macro_rules",
+       "title": "macro_rules! in depth",
+       "xp": 65,
+       "coins": 50,
+       "body": "`macro_rules!` matches tokens, not values. Each rule is `(matcher) => { expansion }`, and the first matching rule wins.\n\nFragment specifiers decide how much the matcher consumes:\n\n- `$x:expr` a single expression\n- `$t:ty` a type\n- `$i:ident` an identifier\n- `$p:pat` a pattern\n- `$b:block` a block\n- `$l:literal` a literal\n- `$tt:tt` one token tree (the escape hatch)\n- `$v:vis`, `$m:meta`, `$it:item`, `$lt:lifetime`, `$s:stmt`\n\nRepetition handles variadic input:\n\n```rust\nmacro_rules! hashmap {\n    ($($k:expr => $v:expr),* $(,)?) => {{\n        let mut map = std::collections::HashMap::new();\n        $( map.insert($k, $v); )*\n        map\n    }};\n}\n```\n\n`$(...),*` means zero or more separated by commas; `$(,)?` allows a trailing comma. The same repetition pattern must appear in the expansion.\n\nHygiene is the sharp edge. Identifiers created inside the macro do not capture caller variables, and a caller's `map` does not collide with the macro's `map`. But types and paths resolve at the call site, which is why macros refer to their own crate as `$crate::...` instead of assuming a path.\n\nRules of thumb:\n\n- A function or generic is better unless you need variadic arguments, a DSL, or code generation.\n- Keep the matcher narrow (`expr`, `ident`) and use `tt` only when you must.\n- Test the error cases; a bad macro error points at the call site, so the matcher should fail early and clearly.\n- `#[macro_export]` puts it at the crate root; internal macros use `pub(crate) use`.\n- A recursive macro needs a base-case rule and a smaller input each step.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Which fragment specifier consumes exactly one token tree and is the usual fallback?",
+         "options": [
+          "$e:expr",
+          "$i:ident",
+          "$t:tt",
+          "$ty:ty"
+         ],
+         "answer": 2,
+         "explanation": "`tt` matches a single token tree, which is useful when no other fragment fits."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "A macro expands before type checking, so it can accept a variable number of arguments.",
+         "answer": true,
+         "explanation": "Macros operate on syntax and expand before the type checker sees the result."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Allow an optional trailing comma in a repetition: `$(,____`.",
+         "answers": [
+          "?"
+         ],
+         "explanation": "`$(,)?` makes the comma optional."
+        },
+        {
+         "type": "codeOutput",
+         "prompt": "What does this expansion print?",
+         "code": "macro_rules! twice {\n    ($x:expr) => { $x + $x };\n}\nfn main() { println!(\"{}\", twice!(3)); }",
+         "options": [
+          "6",
+          "33",
+          "3 + 3",
+          "it does not compile"
+         ],
+         "answer": 0,
+         "explanation": "The expression is substituted textually, so `3 + 3` evaluates to 6."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Write a repetition that inserts every pair.",
+         "lines": [
+          "macro_rules! hashmap {",
+          "    ($($k:expr => $v:expr),* $(,)?) => {{",
+          "        let mut map = HashMap::new();",
+          "        $( map.insert($k, $v); )*",
+          "        map",
+          "    }};",
+          "}"
+         ],
+         "explanation": "Matcher first, then the expansion with the same repetition."
+        }
+       ]
+      },
+      {
+       "id": "adv_proc_macros",
+       "title": "Procedural macros with syn and quote",
+       "xp": 70,
+       "coins": 55,
+       "body": "Procedural macros run as ordinary Rust programs during compilation. They take a `proc_macro::TokenStream` and return one.\n\nThere are three kinds:\n\n- **Derive**: `#[derive(Describe)]` generates an impl for a struct or enum.\n- **Attribute**: `#[route(GET, \"/\")]` rewrites or annotates the item.\n- **Function-like**: `sql!(...)`, called like a macro but parsed however you like.\n\nA proc-macro crate is separate and declares itself:\n\n```toml\n[lib]\nproc-macro = true\n```\n\n```rust\nuse proc_macro::TokenStream;\nuse quote::quote;\nuse syn::{parse_macro_input, DeriveInput};\n\n#[proc_macro_derive(Describe)]\npub fn describe(input: TokenStream) -> TokenStream {\n    let input = parse_macro_input!(input as DeriveInput);\n    let name = input.ident;\n    quote! {\n        impl Describe for #name {\n            fn describe(&self) -> &'static str { stringify!(#name) }\n        }\n    }\n    .into()\n}\n```\n\nWhat matters in practice:\n\n- `syn` parses the input into typed structures; `quote!` writes tokens back. `#var` interpolates.\n- Report errors with `syn::Error::new_spanned(...).to_compile_error()` so the span points at the user's code, not at your macro.\n- Test the UI with `trybuild`: compile-fail cases become fixtures.\n- Inspect expansion with `cargo expand`. Debugging a macro without it is guesswork.\n- Compile time is a real cost. A proc macro runs on every build of every dependent crate; keep it small and avoid heavy dependencies.\n- The macro crate cannot be used by the same crate that defines it. Put the macro in a small companion crate.\n- `TokenStream` has no hygiene of its own; generated identifiers need `format_ident!` and care.\n\nDerive macros are the highest-leverage case: one annotation, an impl that would be long, repetitive and easy to get wrong by hand.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Which crate parses Rust syntax into typed structures for a proc macro?",
+         "options": [
+          "quote",
+          "syn",
+          "proc-macro2",
+          "serde"
+         ],
+         "answer": 1,
+         "explanation": "`syn` parses; `quote` emits tokens."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "A proc-macro crate can be the same crate that uses the macro.",
+         "answer": false,
+         "explanation": "Proc macros must live in a separate `proc-macro = true` crate."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Attach a compile error to the user's tokens with `syn::Error::new_spanned(...).to_compile____()`.",
+         "answers": [
+          "error"
+         ],
+         "explanation": "`to_compile_error` turns the error into tokens the compiler reports at the right span."
+        },
+        {
+         "type": "multipleChoice",
+         "prompt": "What does `cargo expand` show?",
+         "options": [
+          "Heap allocations",
+          "The macro-expanded source",
+          "The dependency tree",
+          "Benchmarks"
+         ],
+         "answer": 1,
+         "explanation": "It renders the code after macro expansion, which is the fastest way to debug a macro."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Parse, interpolate, return.",
+         "lines": [
+          "let input = parse_macro_input!(input as DeriveInput);",
+          "let name = input.ident;",
+          "let tokens = quote! {",
+          "    impl Describe for #name {",
+          "        fn describe(&self) -> &'static str { stringify!(#name) }",
+          "    }",
+          "};",
+          "tokens.into()"
+         ],
+         "explanation": "Parse the input, build the name, interpolate it into `quote!`, then convert."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "adv-async",
+     "title": "Async Internals",
+     "icon": "🌀",
+     "lessons": [
+      {
+       "id": "adv_futures_pin",
+       "title": "Future, poll, Waker and Pin",
+       "xp": 75,
+       "coins": 60,
+       "body": "An `async fn` is sugar for a state machine implementing one trait:\n\n```rust\npub trait Future {\n    type Output;\n    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output>;\n}\n```\n\n`poll` returns `Ready(value)` once, or `Pending` after arranging for the waker to be called when progress is possible. Polling after `Ready` is undefined by contract.\n\nA minimal future looks like this:\n\n```rust\nstruct YieldNow(bool);\n\nimpl Future for YieldNow {\n    type Output = ();\n    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {\n        if self.0 {\n            Poll::Ready(())\n        } else {\n            self.0 = true;\n            cx.waker().wake_by_ref();\n            Poll::Pending\n        }\n    }\n}\n```\n\nWhy `Pin`? Async state machines can borrow across `.await`, which makes them self-referential: a field points into another field of the same future. Moving the future would invalidate that pointer. `Pin<&mut T>` is the promise \"this value will not move again\", which is exactly what the state machine needs.\n\n- `Unpin` is the opt-out: most types can move freely, and `Pin<&mut T>` then behaves like `&mut T`.\n- A `!Unpin` type opts in with `PhantomPinned`.\n- `Box::pin(value)` pins on the heap; `std::pin::pin!` pins on the stack.\n- You rarely implement `Future` by hand. `async` blocks do it, and combinators (`join!`, `select!`) compose them.\n\nKnowing this layer matters when a compiler error mentions `Pin`, `Unpin`, `Send` or `?Sized`, and when you write a custom combinator or a low-level I/O layer.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "What does `Poll::Pending` mean?",
+         "options": [
+          "The future failed",
+          "The future is not finished; it will wake the task",
+          "The future is complete",
+          "The executor must poll immediately"
+         ],
+         "answer": 1,
+         "explanation": "Pending means no value yet and the waker will be notified when progress is possible."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "`Pin<&mut T>` guarantees that `T` will not move for the lifetime of the pin.",
+         "answer": true,
+         "explanation": "That is the pin contract; it is what makes self-referential async state machines sound."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "The type that opts a type out of pinning guarantees is `____`.",
+         "answers": [
+          "Unpin"
+         ],
+         "explanation": "`Unpin` means moving is fine, so `Pin` adds no restriction."
+        },
+        {
+         "type": "codeOutput",
+         "prompt": "How many times does `poll` return `Ready` for a well-behaved future?",
+         "code": "let mut fut = Box::pin(YieldNow(false));\n// poll until Ready",
+         "options": [
+          "Zero",
+          "Exactly once",
+          "Twice",
+          "Every poll"
+         ],
+         "answer": 1,
+         "explanation": "A future returns Ready once and must not be polled afterwards."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Implement one poll step.",
+         "lines": [
+          "fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {",
+          "    if self.0 {",
+          "        Poll::Ready(())",
+          "    } else {",
+          "        self.0 = true;",
+          "        cx.waker().wake_by_ref();",
+          "        Poll::Pending",
+          "    }",
+          "}"
+         ],
+         "explanation": "Ready on the second poll, otherwise schedule a wake and return Pending."
+        }
+       ]
+      },
+      {
+       "id": "adv_executors_cancel",
+       "title": "Executors, cancellation and backpressure",
+       "xp": 75,
+       "coins": 60,
+       "body": "A runtime has two halves: an executor that polls futures, and a reactor that turns I/O and timers into wakeups. Tokio's `#[tokio::main]` builds both.\n\nKey facts that change how you write services:\n\n- `tokio::spawn` requires `Send + 'static`. The future cannot borrow local state across a spawn.\n- `spawn_blocking` is for CPU-bound or blocking calls (file I/O, FFI, compression). Blocking a runtime worker starves every task on it.\n- `tokio::select!` polls branches and drops the loser. Dropping a future is cancellation. It is only safe if the future is cancel-safe: no half-consumed input, no partially written message.\n- `JoinSet` gives structured concurrency: spawn many tasks, await them together, and abort the rest on shutdown.\n- Bounded channels provide backpressure. An unbounded channel turns a slow consumer into unbounded memory growth.\n- `watch` carries the latest shutdown flag; `CancellationToken` (tokio-util) adds child tokens and cooperative stop.\n\nA cancellation-safe read is one that either completes or leaves the buffer untouched. `read_exact` is not cancel-safe (it may have consumed part of the input); `read` is. Check the docs per operation instead of assuming.\n\nGraceful shutdown pattern:\n\n1. Signal handler (or systemd SIGTERM) flips a `watch` to true.\n2. Stop accepting new work.\n3. Let in-flight handlers finish, with a deadline.\n4. Flush buffers, close sockets, exit zero.\n\nA service that is cancelled mid-write and restarts with a corrupted file has a cancellation bug, not an infrastructure problem.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Why is `tokio::spawn` restricted to `Send + 'static` futures?",
+         "options": [
+          "To make futures faster",
+          "The future may run on another worker thread and outlive the caller",
+          "Because async fn is not Send",
+          "To avoid allocations"
+         ],
+         "answer": 1,
+         "explanation": "The task can move between workers and outlive the stack frame, so it cannot borrow non-Send or short-lived state."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "Dropping a future at an await point is how cancellation works, so every awaited operation must be cancel-safe.",
+         "answer": true,
+         "explanation": "select! and shutdown drop futures; a half-applied operation leaves inconsistent state."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Move a blocking call off the async workers with `tokio::task::____`.",
+         "answers": [
+          "spawn_blocking"
+         ],
+         "explanation": "Blocking a runtime worker stalls every task scheduled on it."
+        },
+        {
+         "type": "multipleChoice",
+         "prompt": "What does a bounded channel give you?",
+         "options": [
+          "Faster sends",
+          "Backpressure when the consumer is slower than the producer",
+          "Guaranteed ordering across tasks",
+          "Automatic retries"
+         ],
+         "answer": 1,
+         "explanation": "A full channel makes the producer wait instead of growing memory without bound."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Shut down in order.",
+         "lines": [
+          "signal sets shutdown = true",
+          "stop accepting new connections",
+          "wait for in-flight work with a deadline",
+          "flush and close",
+          "exit with status 0"
+         ],
+         "explanation": "Stop intake, drain, flush, then exit cleanly."
+        }
+       ]
+      },
+      {
+       "id": "adv_async_traits",
+       "title": "Async in traits without lying about Send",
+       "xp": 70,
+       "coins": 55,
+       "body": "Since Rust 1.75 you can write:\n\n```rust\ntrait Store {\n    async fn get(&self, id: u64) -> Option<Item>;\n}\n```\n\nThis desugars to a return-position impl trait (RPITIT), not to a boxed future. Two consequences follow.\n\n**Not dyn-compatible.** `dyn Store` cannot exist because each implementor returns a different anonymous future type. Options:\n\n- Keep generics (`fn serve<S: Store>(store: S)`), which monomorphises and is fastest.\n- Use `async-trait`, which boxes the future (`Pin<Box<dyn Future>>`) and makes the trait dyn-compatible at the cost of an allocation and a vtable.\n- Box by hand: `fn get(&self, id: u64) -> Pin<Box<dyn Future<Output = Option<Item>> + Send + '_>>`.\n\n**`Send` is not implied.** An `async fn` in a trait can capture non-`Send` state, so a spawned task cannot assume the returned future is `Send`. The clean fix is the `trait-variant` crate, which generates a second `Send` variant of the trait. Or write the return type explicitly:\n\n```rust\nfn get(&self, id: u64) -> impl Future<Output = Option<Item>> + Send;\n```\n\nChoosing between designs:\n\n- Generics when you control the call site and want zero cost.\n- `Box<dyn Trait>` when you need a runtime registry of implementations (plugins, adapters).\n- Boxed futures when the trait must be dyn-compatible.\n- An enum of concrete types when the set is closed; it avoids both boxes and dyn.\n\nThe mistake to avoid is writing an async trait, spawning its futures, and discovering the `Send` bound only when the service is wired together.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Why is an `async fn` trait not dyn-compatible by default?",
+         "options": [
+          "It is unsafe",
+          "Each implementor returns a different anonymous future type",
+          "It requires a runtime",
+          "Async is not allowed in traits"
+         ],
+         "answer": 1,
+         "explanation": "RPITIT has a per-implementor opaque type, so a vtable cannot name one return type."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "An `async fn` in a trait guarantees the returned future is `Send`.",
+         "answer": false,
+         "explanation": "`Send` must be promised explicitly or generated with a crate such as `trait-variant`."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Box a future to make a trait object-safe: `Pin<Box<dyn Future<Output = T> + ____>>`.",
+         "answers": [
+          "Send"
+         ],
+         "explanation": "The common bound for spawned tasks is `Send`; add `'_` for the borrow."
+        },
+        {
+         "type": "multipleChoice",
+         "prompt": "When is `async-trait` still the right tool?",
+         "options": [
+          "For zero-cost generics",
+          "When the trait must be used as `dyn Trait`",
+          "When no futures are involved",
+          "For sync code"
+         ],
+         "answer": 1,
+         "explanation": "It boxes the future and makes the trait object-safe, trading an allocation for dyn support."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Choose the cheapest design that fits.",
+         "lines": [
+          "generics: fn serve<S: Store>(s: S)",
+          "closed set: enum Adapter { A(A), B(B) }",
+          "runtime plugins: Box<dyn Trait>",
+          "must be dyn + async: Box<dyn Future>"
+         ],
+         "explanation": "Use generics first, an enum for a closed set, and box only when runtime dispatch is required."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "adv-systems",
+     "title": "Systems Interfaces",
+     "icon": "🔩",
+     "lessons": [
+      {
+       "id": "adv_ffi",
+       "title": "Crossing into C without undefined behaviour",
+       "xp": 75,
+       "coins": 60,
+       "body": "FFI is a boundary where Rust's guarantees stop and a contract begins.\n\n```rust\nuse std::ffi::{c_char, CStr, CString};\n\n#[no_mangle]\npub extern \"C\" fn rust_greet(name: *const c_char) -> *mut c_char {\n    let name = unsafe { CStr::from_ptr(name) }.to_string_lossy();\n    let out = CString::new(format!(\"hello {name}\")).unwrap();\n    out.into_raw()\n}\n\n#[no_mangle]\npub extern \"C\" fn rust_greet_free(ptr: *mut c_char) {\n    if !ptr.is_null() {\n        unsafe { drop(CString::from_raw(ptr)); }\n    }\n}\n```\n\nThe rules that keep this sound:\n\n- `extern \"C\"` fixes the calling convention. `#[repr(C)]` fixes struct layout. Both are required for anything shared.\n- Strings are not Rust `String`s. `CString` owns a NUL-terminated buffer; `CStr` borrows one. `into_raw` transfers ownership to the caller, who must hand it back to a matching free function.\n- `Option<extern \"C\" fn(...)>` and `Option<NonNull<T>>` are null-pointer-optimised, so they cross the boundary at pointer size.\n- A panic unwinding across an `extern \"C\"` boundary is undefined behaviour. Wrap the body in `std::panic::catch_unwind` and return an error code, or use `extern \"C-unwind\"` only when the other side is prepared for it.\n- Validate every pointer: null, alignment, lifetime, and who owns it. `unsafe` blocks belong at the edge, with a safety comment for each.\n- `bindgen` generates Rust bindings from headers; `cbindgen` generates a C header from Rust. Both belong in `build.rs` with the output checked in or regenerated deterministically.\n- Linking is a build concern: `build.rs` emits `cargo:rustc-link-lib=...` and `-search` paths.\n\nIn Rust 2024, `#[no_mangle]` is written `#[unsafe(no_mangle)]`, and an `extern` block is `unsafe extern`, which makes the audit explicit.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Why must a `String` not be passed directly as a C string?",
+         "options": [
+          "It is not UTF-8",
+          "It is not NUL-terminated and its layout is not the C contract",
+          "It cannot be moved",
+          "It is always empty"
+         ],
+         "answer": 1,
+         "explanation": "Use `CString`/`CStr`; the representation and terminator are part of the ABI."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "A panic that unwinds across an `extern \"C\"` boundary is undefined behaviour.",
+         "answer": true,
+         "explanation": "C has no unwind contract; catch it or use the explicit unwind ABI on both sides."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Transfer ownership of a `CString` to C with `CString::into____()`.",
+         "answers": [
+          "raw"
+         ],
+         "explanation": "`into_raw` leaks the buffer to the caller, who must free it with `from_raw`."
+        },
+        {
+         "type": "codeOutput",
+         "prompt": "Who frees the pointer returned by `rust_greet`?",
+         "code": "let p = rust_greet(name);\n// use p\nrust_greet_free(p);",
+         "options": [
+          "Rust frees it automatically",
+          "The caller, via rust_greet_free",
+          "The C allocator",
+          "Nobody, it leaks by design"
+         ],
+         "answer": 1,
+         "explanation": "Ownership crossed the boundary; the matching free function is part of the API."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Guard the boundary.",
+         "lines": [
+          "let name = unsafe { CStr::from_ptr(name) };",
+          "let out = CString::new(format!(\"hello {}\", name.to_string_lossy()))?;",
+          "out.into_raw()"
+         ],
+         "explanation": "Validate and borrow, build an owned C string, then hand ownership out."
+        }
+       ]
+      },
+      {
+       "id": "adv_linux_systems",
+       "title": "File descriptors, syscalls and sandboxes",
+       "xp": 75,
+       "coins": 60,
+       "body": "Below `std` sits the kernel interface. Knowing it explains most daemon bugs.\n\n- **File descriptors are owned resources.** `OwnedFd` closes on drop; `BorrowedFd` does not. `AsFd`/`AsRawFd` are the conversion traits. Duplicating with `try_clone` is explicit; `O_CLOEXEC` prevents leaks into children.\n- **Syscalls return errors, not exceptions.** `EINTR` means retry. Short reads and writes are normal; loop until the buffer is done. `std::io::Read::read_exact` exists for a reason.\n- **Readiness is not completion.** `epoll` says a descriptor is ready; the actual read can still block or return `EAGAIN`. Edge-triggered mode requires draining until `EAGAIN`.\n- **Signals are global state.** A handler may only do async-signal-safe work. The usual design is `signalfd` (or a self-pipe) plus a normal event loop, not logic inside the handler.\n- **Sandboxing is layered.** `seccomp` filters syscalls, Landlock restricts filesystem access from inside the process, namespaces isolate mounts/pids/network, and capabilities drop root powers. A module host wants all four, in that order.\n\nCrates: `rustix` for a safe syscall wrapper, `nix` for POSIX ergonomics, `libc` when you need the raw call, `signal-hook` for signals, `tokio` for async readiness.\n\n```rust\nuse std::os::fd::{AsFd, OwnedFd};\n\nfn read_all(fd: &OwnedFd, buf: &mut [u8]) -> std::io::Result<usize> {\n    // loop on EINTR and short reads in real code\n    rustix::io::read(fd.as_fd(), buf).map_err(Into::into)\n}\n```\n\nThe bread module host is this lesson in production: a child process, a capability manifest, Landlock rules, and an IPC protocol that assumes the child is hostile.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "What does a short read from a file descriptor mean?",
+         "options": [
+          "The file is corrupt",
+          "Fewer bytes were available; loop for the rest",
+          "The descriptor is closed",
+          "The call failed"
+         ],
+         "answer": 1,
+         "explanation": "Reads may return fewer bytes than requested; correct code loops until done or EOF."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "A signal handler may allocate and lock mutexes because the kernel serialises signals.",
+         "answer": false,
+         "explanation": "Handlers must only use async-signal-safe operations; defer work to the event loop."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Restrict a process to a set of paths from inside the process with the ____ LSM (kernel 5.13+).",
+         "answers": [
+          "Landlock",
+          "landlock"
+         ],
+         "explanation": "Landlock applies filesystem rules without root or namespaces."
+        },
+        {
+         "type": "multipleChoice",
+         "prompt": "Why loop on `EINTR`?",
+         "options": [
+          "The syscall was interrupted by a signal and can be retried",
+          "The descriptor is invalid",
+          "The kernel is out of memory",
+          "The operation succeeded"
+         ],
+         "answer": 0,
+         "explanation": "Signals can interrupt blocking syscalls; retrying is the correct handling."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Contain a child process.",
+         "lines": [
+          "drop capabilities",
+          "apply seccomp filters",
+          "apply Landlock path rules",
+          "exec the module host"
+         ],
+         "explanation": "Reduce privileges first, then restrict syscalls and paths, then exec."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "adv-quality",
+     "title": "Performance and Correctness",
+     "icon": "📈",
+     "lessons": [
+      {
+       "id": "adv_performance",
+       "title": "Performance is a measurement discipline",
+       "xp": 70,
+       "coins": 55,
+       "body": "Optimising without a profile is guessing. The workflow is always: measure, change one thing, measure again.\n\n- Build release. Debug builds skip inlining and bounds-check elision and can be 10 to 100 times slower.\n- Use `criterion` for microbenchmarks; it warms up, runs many iterations, and reports confidence intervals.\n- `cargo flamegraph` or `perf record` shows where time actually goes. `perf stat` shows cache misses, branch misses and instructions per cycle.\n- `heaptrack` and `dhat` find allocation hot spots. Allocation is often the real cost, not arithmetic.\n\nCommon wins, in order of frequency:\n\n- **Allocation:** `Vec::with_capacity`, reuse buffers, `Cow<str>` instead of `String`, `SmallVec` for small collections, arenas for request-scoped graphs.\n- **I/O:** buffer reads, batch small writes, avoid per-item fsync, use `BufWriter`.\n- **Data layout:** struct-of-arrays for hot loops, fewer pointer indirections, smaller enums.\n- **Bounds checks:** usually negligible; when they matter, iterate with iterators (which elide them) before reaching for `get_unchecked`.\n- **Compile flags:** LTO for cross-crate inlining, codegen-units=1 for a final build, PGO for a known workload.\n- **SIMD:** `memchr`, `bytecount`, or explicit `std::simd` (nightly) when a profiler says the loop is hot.\n\n`std::hint::black_box` prevents the optimiser from deleting benchmark work.\n\nDo not trade safety for speed without a measurement and a comment. An `unsafe` fast path that is not faster is pure risk.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "What is the first step when optimising?",
+         "options": [
+          "Rewrite in assembly",
+          "Measure with a profiler or benchmark",
+          "Add `unsafe`",
+          "Enable every compiler flag"
+         ],
+         "answer": 1,
+         "explanation": "Without a profile you are guessing, and guesses are usually wrong."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "Debug-build timings are representative of release performance.",
+         "answer": false,
+         "explanation": "Debug builds lack optimisations and can be orders of magnitude slower."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Reserve capacity before a known number of pushes: `Vec::with____(n)`.",
+         "answers": [
+          "capacity"
+         ],
+         "explanation": "One allocation up front beats repeated growth and copying."
+        },
+        {
+         "type": "multipleChoice",
+         "prompt": "Which tool shows allocation hot spots?",
+         "options": [
+          "criterion",
+          "heaptrack",
+          "rustfmt",
+          "clippy"
+         ],
+         "answer": 1,
+         "explanation": "heaptrack (or dhat) records allocations and their call paths."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Run a measurement loop.",
+         "lines": [
+          "write a benchmark with realistic input",
+          "record a baseline",
+          "profile to find the hot path",
+          "change one thing",
+          "re-run and compare"
+         ],
+         "explanation": "Baseline, profile, one change, compare; repeat only if the number moved."
+        }
+       ]
+      },
+      {
+       "id": "adv_testing_strategy",
+       "title": "Testing beyond example tests",
+       "xp": 70,
+       "coins": 55,
+       "body": "Example tests prove the cases you thought of. Mature Rust projects add layers for the cases you did not.\n\n- **Unit tests** next to the code, testing pure decisions. Make time, randomness and I/O injectable so tests need no sleeps.\n- **Integration tests** in `tests/`, exercising the public API or a running binary.\n- **Doc tests** in examples and API docs; they compile, so examples cannot rot.\n- **Property tests** (`proptest`, `quickcheck`) generate inputs and shrink failures to a minimal case. Ideal for parsers, codecs, state machines.\n- **Fuzzing** (`cargo-fuzz`, libFuzzer) explores byte inputs; a corpus plus a time budget finds panics and hangs.\n- **Concurrency tests** (`loom`) model interleavings for lock-free or channel code; they are slow, so test the primitives, not everything.\n- **Compile-fail tests** (`trybuild`) pin macro diagnostics.\n- **Snapshot tests** (`insta`) are good for rendered output, JSON and CLI help.\n- **Mocks** (`mockall`) at trait boundaries, sparingly; fakes with real behaviour age better.\n\nFor a daemon, the highest-value tests are usually pure functions extracted from the runtime: the glob matcher, the freeze decision, the state transition, the protocol parser. If a test needs `sleep(100ms)`, the design probably hides a dependency.\n\nDeterminism is a feature: `tokio::time::pause` advances a virtual clock, an injected `Clock` trait replaces `Instant::now`, and a seeded RNG makes a flaky test reproducible.\n\nCoverage (`cargo llvm-cov`) tells you what ran, not what is correct. Treat a coverage number as a hint, never a target.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Which technique is best for a parser that must never panic?",
+         "options": [
+          "More example tests",
+          "Fuzzing with cargo-fuzz",
+          "A snapshot test",
+          "A doc test"
+         ],
+         "answer": 1,
+         "explanation": "Fuzzing explores byte inputs and finds panics and hangs that examples miss."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "Sleeping in a unit test is a good way to wait for a background task.",
+         "answer": false,
+         "explanation": "It is slow and flaky; inject the clock or use deterministic runtime time."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Property tests shrink a failing input to a minimal case; the common crate is `____`.",
+         "answers": [
+          "proptest",
+          "quickcheck"
+         ],
+         "explanation": "Both generate and shrink; proptest is the more common modern choice."
+        },
+        {
+         "type": "multipleChoice",
+         "prompt": "What does `trybuild` test?",
+         "options": [
+          "Benchmarks",
+          "Compile-fail diagnostics for macros",
+          "Network behaviour",
+          "Memory leaks"
+         ],
+         "answer": 1,
+         "explanation": "It compiles fixture files and compares the compiler output."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Test from cheap to expensive.",
+         "lines": [
+          "unit test a pure decision",
+          "property test the parser",
+          "integration test the binary",
+          "fuzz the decoder",
+          "loom the lock-free primitive"
+         ],
+         "explanation": "Fast, deterministic tests first; expensive exploration last."
+        }
+       ]
+      },
+      {
+       "id": "adv_production_debugging",
+       "title": "Debugging a running service",
+       "xp": 75,
+       "coins": 60,
+       "body": "When a daemon misbehaves in production, the evidence is a stack trace, a log, a metric or a core dump, not a debugger attached to your laptop.\n\n**Crashes.** Set `RUST_BACKTRACE=full` for a local reproduction. In production, a panic hook writes the backtrace and build id to the bug store, and breadbug ships it. A core dump (`coredumpctl`, `gdb ./binary core`) gives registers and frames; `addr2line` or `rust-gdb` resolves addresses when symbols are published. Keep line tables in release builds and strip only after publishing symbols.\n\n**Hangs and races.** `tokio-console` shows live tasks, their states and where they are parked. `strace -f -p` shows syscalls; `perf top` shows CPU. A deadlock usually has an obvious lock-ordering cycle once you see the two stacks. For code that must be provably race-free, model it in `loom`.\n\n**Logs and spans.** `tracing` spans carry request or connection ids; `RUST_LOG` filters without recompiling. Log decisions with structured fields:\n\n```rust\nwarn!(adapter = name, attempt, delay_ms, \"restarting after failure\");\n```\n\n**Metrics.** Counters and histograms answer \"how often\" and \"how slow\"; logs answer \"what happened to this one\". Alert on symptoms (error rate, latency, queue depth), not on every internal event. Distinguish liveness from readiness, and treat missing data as unknown.\n\n**Incident loop.** Stabilise, gather, reproduce, fix, add a regression test, write down the cause. The last two are what stop the same incident from returning.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Which tool shows live tokio tasks and where they are blocked?",
+         "options": [
+          "cargo expand",
+          "tokio-console",
+          "rustfmt",
+          "miri"
+         ],
+         "answer": 1,
+         "explanation": "tokio-console introspects the runtime and task states."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "A production binary should always be fully stripped before deployment.",
+         "answer": false,
+         "explanation": "Keep line tables (or publish symbols separately) so crashes can be resolved."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Inspect a recorded crash from systemd with `____`.",
+         "answers": [
+          "coredumpctl"
+         ],
+         "explanation": "`coredumpctl` lists, inspects and launches a debugger on core dumps."
+        },
+        {
+         "type": "multipleChoice",
+         "prompt": "Why prefer structured tracing fields over formatted strings?",
+         "options": [
+          "They are shorter",
+          "They can be filtered, aggregated and indexed without parsing prose",
+          "They print faster",
+          "They avoid allocation"
+         ],
+         "answer": 1,
+         "explanation": "Fields are queryable data; a formatted sentence has to be parsed again."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Handle an incident.",
+         "lines": [
+          "stabilise the service",
+          "collect logs, metrics and a backtrace",
+          "reproduce locally",
+          "fix and add a regression test",
+          "record the cause"
+         ],
+         "explanation": "Stabilise first, then gather evidence, reproduce, fix and prevent recurrence."
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "adv-design",
+     "title": "Design and Delivery",
+     "icon": "🧭",
+     "lessons": [
+      {
+       "id": "adv_api_design",
+       "title": "APIs that are hard to misuse",
+       "xp": 70,
+       "coins": 55,
+       "body": "A good Rust API makes invalid states unrepresentable and breaking changes explicit.\n\n- **Newtypes** add meaning and invariants: `struct UserId(u64)` cannot be confused with `OrderId`.\n- **Private fields plus constructors** let you enforce invariants. A `NonEmpty<T>` that can only be built from a checked slice is worth more than a comment.\n- **Enums over booleans** when a third state is plausible; `Option<Option<T>>` is a warning sign.\n- **`#[non_exhaustive]`** on public enums and structs reserves the right to add variants and fields without a major version.\n- **Sealed traits** (`pub trait Foo: private::Sealed`) let you add methods without downstream implementors breaking.\n- **Errors are API.** A typed error with variants is matchable; a `String` is not. `thiserror` for libraries, `anyhow` at the binary edge.\n- **Semver:** adding an enum variant without `#[non_exhaustive]`, changing a trait's required method, or tightening a bound is breaking. Feature flags must be additive; a flag that removes API is a semver trap.\n- **Arguments:** `&str` for borrowed text, `impl AsRef<Path>` for paths, `impl Into<String>` when you need ownership, `&[T]` over `&Vec<T>`.\n- **Docs:** `#![warn(missing_docs)]`, a runnable example in the crate docs, and `# Errors` / `# Panics` sections. Doc tests keep examples honest.\n- **`#[must_use]`** on results and builders catches ignored values at compile time.\n\nDesign the call site first. If the obvious call is wrong, the API is wrong.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "Why put `#[non_exhaustive]` on a public enum?",
+         "options": [
+          "To make it faster",
+          "To allow adding variants without a breaking change",
+          "To hide the variants",
+          "To derive Serialize"
+         ],
+         "answer": 1,
+         "explanation": "Downstream matches must include a wildcard, so new variants are not breaking."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "Adding a required method to a public trait is a minor-version change.",
+         "answer": false,
+         "explanation": "It breaks every implementor, so it is a major change (or seal the trait)."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Use `&____` instead of `&Vec<T>` for a read-only sequence parameter.",
+         "answers": [
+          "[T]",
+          "slice"
+         ],
+         "explanation": "`&[T]` accepts vectors, arrays and slices without tying the API to one container."
+        },
+        {
+         "type": "multipleChoice",
+         "prompt": "Which is the better public error type for a library?",
+         "options": [
+          "String",
+          "Box<dyn Error>",
+          "A thiserror enum with variants",
+          "anyhow::Error"
+         ],
+         "answer": 2,
+         "explanation": "Callers can match on typed variants; anyhow belongs at the application edge."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Build a validated value.",
+         "lines": [
+          "struct Email(String);",
+          "impl Email {",
+          "    pub fn parse(raw: &str) -> Result<Self, EmailError> {",
+          "        // validate",
+          "        Ok(Self(raw.to_owned()))",
+          "    }",
+          "}"
+         ],
+         "explanation": "The field stays private and the constructor is the only way in."
+        }
+       ]
+      },
+      {
+       "id": "adv_architecture_capstone",
+       "title": "Architecture and an unguided capstone",
+       "xp": 90,
+       "coins": 70,
+       "project": {
+        "title": "Build a supervised file-watcher daemon",
+        "description": "No step-by-step lesson. Build a daemon that watches a directory, publishes JSON events on a Unix socket, keeps a small in-memory state, and shuts down cleanly. Acceptance: unit tests for the pure decision logic, an integration test over the socket, a systemd user unit, and a README. Read the brief in the lesson body for milestones and the rubric.",
+        "starterCode": "// Suggested workspace\n// crates/watchd/src/main.rs      thin binary: parse, run, map exit codes\n// crates/watchd/src/lib.rs       library: state, decisions\n// crates/watchd/src/ipc.rs       unix socket + NDJSON protocol\n// crates/watchd/src/watcher.rs   notify crate -> events\n// crates/watchd/tests/           integration over the socket\n"
+       },
+       "body": "Architecture is the set of decisions that are expensive to change later. Three patterns carry most of the weight in this ecosystem.\n\n**Pure core, effectful shell.** Put decisions in functions that take data and return data: a glob matcher, a state transition, a backoff policy, a freeze decision. The shell owns I/O, time, sockets and tasks. The core is fast to test and does not need a runtime.\n\n**Ports and adapters.** The domain defines traits it needs (`Store`, `Clock`, `Notifier`); adapters implement them for SQLite, the real clock, or a socket. Dependencies point inward: the domain does not import the adapter. This is what lets `breadd` test adapters and normalisers without a compositor.\n\n**One owner for mutable state.** Mutations travel as messages to a single consumer, which applies them in order. Readers get snapshots. This removes lock-order puzzles and makes the state machine inspectable.\n\nLayer a workspace accordingly:\n\n```\ncrates/shared     wire types, no I/O\ncrates/core       decisions, no I/O\ncrates/adapters   sockets, DB, compositor\ncrates/cli        argument parsing and exit codes\ncrates/daemon     wiring, supervision, shutdown\n```\n\nThe capstone forces all of it: a `notify` watcher, an NDJSON Unix socket, a supervised task, graceful shutdown on SIGTERM, and tests that do not sleep.\n\n**Rubric (aim for all six):**\n\n1. The pure core has unit tests and no `async`.\n2. The socket protocol has a version handshake and a tagged push message.\n3. Backpressure is bounded; a slow client cannot grow memory without limit.\n4. Shutdown drains in-flight work and exits zero.\n5. A systemd user unit with `Restart=on-failure` and `WantedBy=default.target`.\n6. A README that explains the protocol, the failure modes and how to run the tests.\n\nIf you get stuck, the earlier advanced lessons are the reference. Do not copy their examples; build the smallest version that passes each rubric item, then make it better.\n",
+       "questions": [
+        {
+         "type": "multipleChoice",
+         "prompt": "What belongs in the pure core?",
+         "options": [
+          "Socket writes",
+          "State transitions and decisions",
+          "CLI parsing",
+          "Signal handlers"
+         ],
+         "answer": 1,
+         "explanation": "The core takes data and returns data; I/O stays in the shell."
+        },
+        {
+         "type": "trueFalse",
+         "prompt": "With ports and adapters, the domain crate depends on the SQLite adapter.",
+         "answer": false,
+         "explanation": "Dependencies point inward: the domain defines the trait, the adapter implements it."
+        },
+        {
+         "type": "fillBlank",
+         "prompt": "Let one task own mutations, sent as messages, to avoid lock-order puzzles: a command ____.",
+         "answers": [
+          "channel",
+          "queue"
+         ],
+         "explanation": "A single consumer applies commands in order."
+        },
+        {
+         "type": "multipleChoice",
+         "prompt": "Where should graceful shutdown be triggered?",
+         "options": [
+          "Inside every adapter",
+          "At the edge (signal handler) via a shared flag",
+          "In the database layer",
+          "In main's first line"
+         ],
+         "answer": 1,
+         "explanation": "The edge flips one shutdown signal; tasks observe it and drain."
+        },
+        {
+         "type": "codeOrder",
+         "prompt": "Wire the daemon.",
+         "lines": [
+          "parse configuration",
+          "build the state and command channel",
+          "spawn supervised adapters",
+          "serve the socket until shutdown",
+          "drain and exit zero"
+         ],
+         "explanation": "Configure, construct, spawn, serve, drain."
         }
        ]
       }

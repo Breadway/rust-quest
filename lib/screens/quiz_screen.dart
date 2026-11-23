@@ -291,6 +291,7 @@ class _QuizScreenState extends State<QuizScreen> {
               const SizedBox(height: 10),
               MarkdownBody(
                 data: q.prompt,
+                softLineBreak: true,
                 styleSheet: markdownStyleSheet().copyWith(
                   p: const TextStyle(fontSize: 19, height: 1.4, color: kText),
                 ),
@@ -421,29 +422,26 @@ class _QuizScreenState extends State<QuizScreen> {
                       style: TextStyle(color: kMuted, fontSize: 13),
                     ),
                   )
-                : Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                : Column(
                     children: [
-                      for (final i in _order)
-                        _lineChip(
-                          q.lines[i],
+                      for (var pos = 0; pos < _order.length; pos++)
+                        _codeLineRow(
+                          q.lines[_order[pos]],
+                          number: pos + 1,
                           trailing: _checked ? null : Icons.close,
                           onTap: _checked
                               ? null
-                              : () => setState(() => _order.remove(i)),
+                              : () => setState(() => _order.removeAt(pos)),
                         ),
                     ],
                   ),
           ),
           const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          Column(
             children: [
               for (final i in _shuffled)
                 if (!_order.contains(i))
-                  _lineChip(
+                  _codeLineRow(
                     q.lines[i],
                     onTap: _checked
                         ? null
@@ -480,13 +478,23 @@ class _QuizScreenState extends State<QuizScreen> {
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: MarkdownBody(
-                        data: options[i],
-                        styleSheet: markdownStyleSheet().copyWith(
-                          p: const TextStyle(fontSize: 16, color: kText),
-                          blockSpacing: 0,
-                        ),
-                      ),
+                      child: options[i].contains('\n')
+                          ? SelectableText(
+                              options[i],
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 13.5,
+                                height: 1.45,
+                                color: kText,
+                              ),
+                            )
+                          : MarkdownBody(
+                              data: options[i],
+                              styleSheet: markdownStyleSheet().copyWith(
+                                p: const TextStyle(fontSize: 16, color: kText),
+                                blockSpacing: 0,
+                              ),
+                            ),
                     ),
                   ],
                 ),
@@ -496,29 +504,53 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
-  Widget _lineChip(String text, {IconData? trailing, VoidCallback? onTap}) {
+  /// One code line, always on its own full-width row. Ordering questions are
+  /// about vertical order, so two short lines must never sit side by side.
+  Widget _codeLineRow(
+    String text, {
+    int? number,
+    IconData? trailing,
+    VoidCallback? onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         decoration: BoxDecoration(
           color: kSurfaceAlt,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            Flexible(
-              child: Text(
-                text,
-                style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            if (number != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Text(
+                  '$number',
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    color: kMuted,
+                  ),
+                ),
+              ),
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Text(
+                  text,
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                ),
               ),
             ),
-            if (trailing != null) ...[
-              const SizedBox(width: 6),
-              Icon(trailing, size: 14, color: kMuted),
-            ],
+            if (trailing != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: Icon(trailing, size: 14, color: kMuted),
+              ),
           ],
         ),
       ),

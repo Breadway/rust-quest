@@ -4,7 +4,7 @@ A data-driven rebuild of the Learn Rust Easily curriculum, plus a course written
 for the bread ecosystem. Lessons live in `assets/curriculum.json`; adding more is
 an edit to that file, not a code change.
 
-Current content: 12 courses, 43 modules, 139 lessons, 891 questions.
+Current content: 13 courses, 49 modules, 153 lessons, 961 questions.
 
 ## Features
 
@@ -21,6 +21,11 @@ Current content: 12 courses, 43 modules, 139 lessons, 891 questions.
   events and serde wire types, glob subscriptions, shared state, supervised
   tokio tasks, error context, socket IPC, Lua hosting, workspaces and CLIs, axum
   and sqlx services, diagnostics and scrubbing, release channels, and BOS/Lua.
+- Advanced Rust course, always unlocked: 6 modules and 14 lessons on unsafe
+  soundness, layout and allocators, macro_rules and proc macros, Future/Pin,
+  executors and cancellation, async traits, FFI, Linux syscalls and sandboxes,
+  performance, testing strategy, production debugging, API design, architecture
+  and an unguided capstone.
 
 ## Layout
 
