@@ -1,0 +1,28 @@
+name: rust_quest
+description: "Rust Quest - a data-driven Rust learning app rebuilt from the recovered curriculum of Learn Rust Easily."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.14.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  flutter_markdown: ^0.7.7+1
+  shared_preferences: ^2.5.3
+  url_launcher: ^6.3.1
+  flutter_highlight: ^0.7.0
+  http: ^1.6.0
+  markdown: ^7.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/curriculum.json
